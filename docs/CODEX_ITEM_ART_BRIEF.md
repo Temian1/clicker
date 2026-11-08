@@ -102,9 +102,21 @@ Citizens must be **clearly ordinary people** (no agbada, no podium, no politicia
 
 ## 4. Quality checklist
 
-- [ ] All 23 keys present (the script says `manifest: 23/23`)
-- [ ] Promises read as white speech bubbles, bad items as red warnings, power-ups as green badges
-- [ ] Each item is recognisable at 48 px
-- [ ] The hammer is obviously a soft squeaky toy
-- [ ] Citizens look like ordinary fictional people, clearly different from the politicians
-- [ ] Consistent outline thickness and colour style across the set and with the character sprites
+- [x] All 23 keys present (the script says `manifest: 23/23`)
+- [x] Promises read as white speech bubbles, bad items as red warnings, power-ups as green badges
+- [x] Each item is recognisable at 48 px
+- [x] The hammer is obviously a soft squeaky toy
+- [x] Citizens look like ordinary fictional people, clearly different from the politicians
+- [x] Consistent outline thickness and colour style across the set and with the character sprites
+
+Verified in both games on a mobile viewport. The frontend build passes, all 23 images load through the game manifest, and the app icons load at their declared sizes. Local visual review: `art-source/item-preview.html`.
+
+## 5. Game icon
+
+The matching Rally Wahala icon combines an open blue-red receipt bag, a golden light-bulb speech bubble and a soft red-yellow toy hammer on an emerald background. It has no text and uses the same dark-brown outlines as the items.
+
+- Source: `art-source/app-icon.png`.
+- Export with `python scripts/optimize-art.py icons`.
+- Outputs in `frontend/public/`: `app-icon.png` (1024), `icon-512.png`, `icon-192.png`, `apple-touch-icon.png` (180), and `favicon.png` (32).
+- `frontend/index.html` links the favicon, Apple icon and `manifest.webmanifest`; the manifest references the 192 and 512 pixel app icons.
+- Exact prompts for all 23 items and the icon are recorded in `art-source/generation-prompts.json` alongside the local source art.

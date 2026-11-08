@@ -8,6 +8,7 @@ Usage (from the repo root):
   python scripts/optimize-art.py              # items + characters
   python scripts/optimize-art.py items        # only items
   python scripts/optimize-art.py characters   # only character sheets
+  python scripts/optimize-art.py icons        # app icon + browser/mobile sizes
 
 Backgrounds are removed automatically with rembg (isnet-anime) when an image
 has no transparency. Requires: pip install pillow rembg onnxruntime
@@ -25,6 +26,8 @@ SRC_ITEMS = ROOT / "art-source" / "items"
 SRC_CHARS = ROOT / "art-source" / "characters"
 OUT_ITEMS = ROOT / "frontend" / "public" / "items"
 OUT_CHARS = ROOT / "frontend" / "public" / "characters"
+SRC_ICON = ROOT / "art-source" / "app-icon.png"
+OUT_PUBLIC = ROOT / "frontend" / "public"
 ASSETS_TS = ROOT / "frontend" / "src" / "game" / "assets.tsx"
 
 ITEM_SIZE = 256          # every item is a 256x256 transparent square
@@ -38,6 +41,8 @@ def cutout(img: Image.Image) -> Image.Image:
     img = img.convert("RGBA")
     alpha = img.getchannel("A")
     if alpha.getextrema()[0] < 250:  # already has transparent pixels
+        # Generated cutouts can contain faint background speckles outside the art.
+        img.putalpha(alpha.point(lambda value: 0 if value < 16 else value))
         return img
     global _session
     from rembg import new_session, remove  # imported lazily: heavy
@@ -100,9 +105,32 @@ def do_characters() -> None:
         print(f"  sheet {out.name:28s} {out.stat().st_size // 1024} KB")
 
 
+def do_icons() -> None:
+    """Export the generated opaque app icon for browsers and home screens."""
+    if not SRC_ICON.exists():
+        print("  ! app icon source missing: art-source/app-icon.png")
+        return
+    with Image.open(SRC_ICON) as source:
+        icon = source.convert("RGB")
+    if icon.width != icon.height:
+        raise ValueError("The app icon must be square")
+    for name, size in (
+        ("app-icon.png", 1024),
+        ("icon-512.png", 512),
+        ("icon-192.png", 192),
+        ("apple-touch-icon.png", 180),
+        ("favicon.png", 32),
+    ):
+        out = OUT_PUBLIC / name
+        icon.resize((size, size), Image.LANCZOS).save(out, "PNG", optimize=True)
+        print(f"  icon  {out.name:28s} {size}x{size}")
+
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
     if what in ("all", "items"):
         do_items()
     if what in ("all", "characters"):
         do_characters()
+    if what in ("all", "icons"):
+        do_icons()
