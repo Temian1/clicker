@@ -23,6 +23,7 @@ import {
   upgradeCost,
   weekKey,
 } from './progression'
+import { PROTEST_WINDOW_MS, nextEventDelay, pickEvent, protestReward, protestTarget, type EconomyEvent } from './events'
 import type { ChallengeMetric, DailyChallenge, UpgradeId } from './types'
 
 export interface CharProgress {
@@ -68,6 +69,7 @@ export interface TapResult {
   mult: number
   stageUp: number | null
   meltdown: { reward: number; term: number; level: number; nextId: string; nextName: string; newUnlock: boolean } | null
+  protest: { def: EconomyEvent; reward: number } | null
 }
 
 interface Persisted {
@@ -84,6 +86,9 @@ interface Persisted {
   period: { dayKey: string; weekKey: string; daily: number; weekly: number }
   streak: { last: string | null; count: number }
   turboUntil: number
+  /** economy wahala: tap earnings multiplier until this time */
+  nerfUntil: number
+  nerfMult: number
   bossLevel: number
   /** Global level: +1 per meltdown. Each level moves you to the next cast member. */
   level: number
@@ -99,6 +104,8 @@ interface Transient {
   fxBurst: number
   fxBurstKind: 'stage' | 'meltdown' | 'win'
   lastBubbleAt: number
+  event: { def: EconomyEvent; endsAt: number; taps: number; target: number } | null
+  nextEventAt: number
 }
 
 interface Actions {
@@ -117,6 +124,8 @@ interface Actions {
   finishDuel(win: boolean, score: number): number
   say(text: string): void
   burst(kind: Transient['fxBurstKind']): void
+  maybeStartEvent(): EconomyEvent | null
+  expireEvent(): { def: EconomyEvent; lost: number } | null
   setSettings(p: Partial<Settings>): void
   takePendingSync(): { coins: number; taps: number }
   resetAll(): void
@@ -160,6 +169,8 @@ const initial = (): Persisted => ({
   period: { dayKey: dayKey(), weekKey: weekKey(), daily: 0, weekly: 0 },
   streak: { last: null, count: 0 },
   turboUntil: 0,
+  nerfUntil: 0,
+  nerfMult: 1,
   bossLevel: 1,
   level: 1,
   settings: { sfx: true, music: true, haptics: true, voice: false },
@@ -190,6 +201,8 @@ export const useGame = create<GameState>()(
       fxBurst: 0,
       fxBurstKind: 'stage',
       lastBubbleAt: 0,
+      event: null,
+      nextEventAt: Date.now() + 45_000,
 
       setProfile(name, avatar) {
         const p = get().profile
@@ -239,8 +252,9 @@ export const useGame = create<GameState>()(
         const crit = Math.random() < critFor(s.upgrades.crit)
         const power = tapPowerFor(s.upgrades.tapPower)
         const turbo = s.turboUntil > now ? BOOSTS.turbo.mult : 1
+        const nerf = s.nerfUntil > now ? s.nerfMult : 1
         const wahalaGain = Math.round(power * mult * (crit ? 10 : 1))
-        const coins = Math.max(1, Math.round(wahalaGain * turbo * char.coinBonus))
+        const coins = Math.max(1, Math.round(wahalaGain * turbo * nerf * char.coinBonus))
 
         const before = stageFor(cp.wahala, cp.term)
         let wahala = cp.wahala + wahalaGain
@@ -303,7 +317,19 @@ export const useGame = create<GameState>()(
           get().say(randomLine(char, before))
         }
 
-        return { coins, crit, combo, mult, stageUp, meltdown }
+        // protest against an active economy event
+        let protest: TapResult['protest'] = null
+        const ev = get().event
+        if (ev && now < ev.endsAt) {
+          const taps = ev.taps + 1
+          if (taps >= ev.target) {
+            const reward = ev.def.kind === 'bonus' ? ev.def.amount * get().level : protestReward(get().level)
+            set((st) => ({ ...earn(st, reward), event: null, nextEventAt: now + nextEventDelay() }))
+            protest = { def: ev.def, reward }
+          } else set({ event: { ...ev, taps } })
+        }
+
+        return { coins, crit, combo, mult, stageUp, meltdown, protest }
       },
 
       tick(dtMs) {
@@ -421,6 +447,35 @@ export const useGame = create<GameState>()(
 
       say(text) {
         set({ bubble: { text, id: Date.now() }, lastBubbleAt: Date.now() })
+      },
+
+      maybeStartEvent() {
+        const s = get()
+        const now = Date.now()
+        if (s.event || now < s.nextEventAt || s.totalTaps < 50) return null
+        const def = pickEvent()
+        set({ event: { def, endsAt: now + PROTEST_WINDOW_MS, taps: 0, target: protestTarget(s.level) } })
+        return def
+      },
+
+      expireEvent() {
+        const s = get()
+        const ev = s.event
+        if (!ev || Date.now() < ev.endsAt) return null
+        const now = Date.now()
+        let lost = 0
+        const patch: Partial<GameState> = { event: null, nextEventAt: now + nextEventDelay() }
+        if (ev.def.kind === 'drain') {
+          lost = Math.floor(s.coins * ev.def.amount)
+          patch.coins = s.coins - lost
+        } else if (ev.def.kind === 'nerf') {
+          patch.nerfUntil = now + (ev.def.durationMs ?? 30_000)
+          patch.nerfMult = ev.def.amount
+        } else if (ev.def.kind === 'energy') {
+          patch.energy = s.energy * (1 - ev.def.amount)
+        }
+        set(patch)
+        return { def: ev.def, lost }
       },
 
       burst(kind) {

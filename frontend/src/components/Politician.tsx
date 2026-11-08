@@ -1,4 +1,4 @@
-import { forwardRef, memo, useId, useState } from 'react'
+import { forwardRef, memo, useState } from 'react'
 import type { CharacterDef } from '../game/types'
 
 /**
@@ -17,7 +17,6 @@ interface Props {
 
 export const Politician = memo(
   forwardRef<SVGSVGElement, Props>(function Politician({ def, stage, hit = false, silhouette = false, className }, ref) {
-    const uid = useId().replace(/:/g, '')
     const sheet = def.look.spriteSheet
     const [failed, setFailed] = useState<string | null>(null)
     const frame = Math.max(0, Math.min(5, Math.floor(stage)))
@@ -33,21 +32,8 @@ export const Politician = memo(
         aria-label={`${def.name}, stage ${frame + 1}`}
         style={silhouette ? { filter: 'brightness(0) opacity(0.55)' } : undefined}
       >
-        <defs>
-          {/* soft vignette so the sheet's dark backdrop melts into the game background */}
-          <radialGradient id={`fade-${uid}`} cx="50%" cy="50%" r="50%">
-            <stop offset="72%" stopColor="#fff" />
-            <stop offset="100%" stopColor="#000" />
-          </radialGradient>
-          <mask id={`mask-${uid}`}>
-            <rect x="0" y="20" width="300" height="350" fill={`url(#fade-${uid})`} />
-          </mask>
-        </defs>
-
-        <ellipse cx={150} cy={360} rx={95} ry={10} fill="#000" opacity={0.35} />
-
         {showSprite ? (
-          <g mask={`url(#mask-${uid})`} className={frame === 5 ? 'shake' : undefined}>
+          <g className={frame === 5 ? 'shake' : undefined}>
             <g style={hit ? { filter: 'brightness(1.35) saturate(1.2)' } : undefined}>
               {/* nested viewport crops the atlas down to one 1/3 × 1/2 cell */}
               <svg x={-25} y={20} width={350} height={350} viewBox={`${(frame % 3) * 400} ${Math.floor(frame / 3) * 400} 400 400`} preserveAspectRatio="xMidYMid meet">

@@ -3,7 +3,7 @@ import { Suspense, lazy, useEffect, useState } from 'react'
 import { api } from './api'
 import { CoinAmount, GameButton, BottomNav, Hud, Toasts } from './components/ui'
 import { setAudioPrefs, sfx, unlockAudio } from './game/audio'
-import { fmtTime } from './game/format'
+import { fmt, fmtTime } from './game/format'
 import { registerCharacters } from './game/characters'
 import { useGame } from './game/store'
 import { startSync } from './game/sync'
@@ -39,6 +39,18 @@ export default function App() {
         if (r) setOffline(r)
       } else {
         s.tick(Math.min(now - last, 1000))
+      }
+      // economy wahala events (only start while you're on the tap screen, so you can protest)
+      if (useUi.getState().screen === 'tap' && !useUi.getState().modal && s.maybeStartEvent()) sfx.alert()
+      const hit = s.expireEvent()
+      if (hit) {
+        if (hit.def.kind === 'bonus') {
+          useUi.getState().toast({ kind: 'info', icon: hit.def.icon, title: 'Palliative don finish 😩', body: 'You no tap fast enough. Next time!' })
+        } else {
+          sfx.error()
+          const body = hit.def.kind === 'drain' ? `You lost ${fmt(hit.lost)} coins` : hit.def.body
+          useUi.getState().toast({ kind: 'error', icon: hit.def.icon, title: hit.def.title, body })
+        }
       }
       last = now
     }, 200)

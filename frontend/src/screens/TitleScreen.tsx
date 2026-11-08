@@ -47,7 +47,7 @@ export default function TitleScreen({ onPlay }: { onPlay: () => void }) {
       </motion.div>
 
       <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 2.4 }} className="relative h-[38vh] w-full max-w-[300px]">
-        <Politician def={CHARACTERS[ci]} stage={stage} className="h-full w-full drop-shadow-[0_12px_24px_rgba(0,0,0,.5)]" />
+        <Politician def={CHARACTERS[ci]} stage={stage} className="h-full w-full" />
       </motion.div>
 
       <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full">

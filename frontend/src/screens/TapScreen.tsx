@@ -29,6 +29,9 @@ export default function TapScreen() {
   const comboCapLvl = useGame((s) => s.upgrades.comboCap)
   const bubble = useGame((s) => s.bubble)
   const turboUntil = useGame((s) => s.turboUntil)
+  const nerfUntil = useGame((s) => s.nerfUntil)
+  const nerfMult = useGame((s) => s.nerfMult)
+  const event = useGame((s) => s.event)
   const daily = useGame((s) => s.daily)
   const settings = useGame((s) => s.settings)
   const streakLast = useGame((s) => s.streak.last)
@@ -57,6 +60,7 @@ export default function TapScreen() {
     return () => window.clearInterval(t)
   }, [])
   const turboLeft = Math.max(0, turboUntil - now)
+  const nerfLeft = Math.max(0, nerfUntil - now)
 
   useEffect(() => {
     if (bubble) speak(bubble.text)
@@ -95,6 +99,16 @@ export default function TapScreen() {
     if (r.crit) sfx.crit()
     else sfx.tap(r.combo)
     if (settings.haptics) vibrate(r.crit ? [20, 30, 40] : 12)
+
+    if (r.protest) {
+      sfx.buy()
+      useGame.getState().burst('win')
+      toast(
+        r.protest.def.kind === 'bonus'
+          ? { kind: 'success', icon: r.protest.def.icon, title: 'Palliative collected!', body: `+${fmt(r.protest.reward)} coins` }
+          : { kind: 'success', icon: '✊', title: 'Protest successful!', body: `${r.protest.def.title.replace('!', '')} blocked. +${fmt(r.protest.reward)} coins` },
+      )
+    }
 
     if (r.meltdown) {
       sfx.meltdown()
@@ -146,7 +160,7 @@ export default function TapScreen() {
         <div className="absolute aspect-square w-[78%] max-w-[360px] rounded-full opacity-60 blur-2xl" style={{ background: `radial-gradient(circle, ${st.color}aa, transparent 65%)` }} />
 
         <div ref={scope} className="relative h-full max-h-[420px] w-full max-w-[340px] cursor-pointer" style={{ transformStyle: 'preserve-3d' }}>
-          <Politician def={def} stage={stage} hit={hit} className="h-full w-full drop-shadow-[0_12px_20px_rgba(0,0,0,.45)]" />
+          <Politician def={def} stage={stage} hit={hit} className="h-full w-full" />
         </div>
 
         {/* speech bubble */}
@@ -184,6 +198,37 @@ export default function TapScreen() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* economy wahala event: protest by tapping */}
+        <AnimatePresence>
+          {event && now < event.endsAt && (
+            <motion.div
+              key={event.def.id + event.endsAt}
+              initial={{ y: -30, opacity: 0, scale: 0.9 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              className={`pointer-events-none absolute inset-x-2 top-0 z-20 rounded-2xl border-[3px] border-[#042016] p-2.5 shadow-xl ${event.def.kind === 'bonus' ? 'bg-[#00a859]' : 'bg-[#ff4d4d]'}`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="wobble text-3xl">{event.def.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-display text-outline-sm text-lg leading-tight">{event.def.title}</div>
+                  <div className="text-xs font-black text-white/90">
+                    {event.def.kind === 'bonus' ? 'TAP FAST to collect!' : `PROTEST! Tap ${event.target}× to block · ${event.def.body}`}
+                  </div>
+                </div>
+                <div className="font-display text-outline-sm text-2xl tabular-nums">{Math.ceil((event.endsAt - now) / 1000)}</div>
+              </div>
+              <ProgressBar pct={event.taps / event.target} color="#ffc93c" height={12} className="mt-1.5" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {nerfLeft > 0 && (
+          <div className="font-display pointer-events-none absolute bottom-2 left-0 flex items-center gap-1 rounded-xl border-2 border-[#042016] bg-[#ff4d4d] px-2 py-1 text-sm shadow-lg">
+            📉 Earnings -{Math.round((1 - nerfMult) * 100)}% · {Math.ceil(nerfLeft / 1000)}s
+          </div>
+        )}
 
         {turboLeft > 0 && (
           <div className="font-display pointer-events-none absolute top-14 left-0 flex items-center gap-1 rounded-xl border-2 border-[#042016] bg-[#9b5cff] px-2 py-1 text-sm shadow-lg">
