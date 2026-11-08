@@ -1,0 +1,230 @@
+import type { CharacterDef } from './types'
+
+/**
+ * The roster. ALL characters are fictional satirical caricatures — they are not
+ * based on any real person. Adding a character = adding an object here (or, in
+ * production, a row in the Laravel `characters` table served by GET /api/characters).
+ * The game has no ending: the roster grows and every character can be re-elected
+ * for endless terms.
+ */
+export const CHARACTERS: CharacterDef[] = [
+  {
+    id: 'chief-promise',
+    name: 'Chief Promise Plenty',
+    title: 'Professional Promiser',
+    bio: 'Has promised 24-hour light every election since 1999. Still very confident.',
+    unlockCost: 0,
+    coinBonus: 1,
+    look: {
+      skin: '#8d5524',
+      skinShade: '#6b3e18',
+      robe: '#f4f1e8',
+      robeTrim: '#d4a017',
+      robePattern: 'embroidery',
+      cap: '#d4a017',
+      capTrim: '#8a6400',
+      headwear: 'fila',
+      facialHair: 'moustache',
+      build: 'round',
+      accessories: ['sunglasses', 'fan'],
+    },
+    lines: {
+      0: ['I go fix am… next tenure!', 'My people, I greet you o!'],
+      3: ['I said I will fix it! I never said WHEN!'],
+      5: ['I PROMISE TO STOP PROMISING!!!'],
+    },
+    promises: ['24 hours light… by 2099!', 'Free Wi-Fi for every goat!', 'A bridge where there is no river!'],
+  },
+  {
+    id: 'mama-dividends',
+    name: 'Hon. Mama Dividends',
+    title: 'Minister of Owambe Affairs',
+    bio: 'Shares dividends of democracy in very small nylon bags. Matching gele for every occasion.',
+    unlockCost: 5_000,
+    coinBonus: 1.15,
+    look: {
+      skin: '#a0662d',
+      skinShade: '#7a4a1c',
+      robe: '#8e2de2',
+      robeTrim: '#ff9f1c',
+      robePattern: 'zigzag',
+      cap: '#ff9f1c',
+      capTrim: '#c46b00',
+      headwear: 'gele',
+      facialHair: 'none',
+      build: 'stout',
+      accessories: ['beads', 'phone'],
+      lipstick: '#c2185b',
+    },
+    lines: {
+      0: ['Who wan collect rice? Line up!', 'My gele cost more than your budget!'],
+      2: ['Ehn ehn! Mind my gele o!'],
+      4: ['My makeup! Who will pay for my makeup?!'],
+    },
+    promises: ['Free jollof every Sunday!', 'Gele allowance for all women!', 'Owambe as a public holiday!'],
+  },
+  {
+    id: 'sen-bag-hustle',
+    name: 'Senator Bag Hustle',
+    title: 'Chairman, Committee on Big Bags',
+    bio: 'Never seen without his checkered bag. Insists it contains "constituency documents".',
+    unlockCost: 25_000,
+    coinBonus: 1.3,
+    look: {
+      skin: '#6b3e18',
+      skinShade: '#4d2b10',
+      robe: '#1e7f4f',
+      robeTrim: '#f7f7f7',
+      robePattern: 'stripes',
+      cap: '#c62828',
+      capTrim: '#ffd54f',
+      headwear: 'okpu',
+      facialHair: 'goatee',
+      build: 'tall',
+      accessories: ['bag', 'sunglasses'],
+    },
+    lines: {
+      0: ['Na documents dey this bag, I swear!'],
+      3: ['Leave my bag! LEAVE MY BAG!'],
+      5: ['The bag don open! Everybody close una eye!'],
+    },
+    promises: ['A bag for every citizen!', 'Constituency project: one borehole, no water!', 'Free bags, bring your own money!'],
+  },
+  {
+    id: 'alhaji-budget',
+    name: 'Alhaji Budget Padding',
+    title: 'Grand Commissioner of Arithmetic',
+    bio: 'Can turn ₦1,000 into ₦1 billion on paper. Brilliant with a calculator, allergic to receipts.',
+    unlockCost: 100_000,
+    coinBonus: 1.5,
+    look: {
+      skin: '#c68642',
+      skinShade: '#9a6430',
+      robe: '#1565c0',
+      robeTrim: '#e3f2fd',
+      robePattern: 'embroidery',
+      cap: '#e3f2fd',
+      capTrim: '#1565c0',
+      headwear: 'zanna',
+      facialHair: 'beard',
+      build: 'round',
+      accessories: ['calculator', 'beads'],
+    },
+    lines: {
+      0: ['Two plus two na… ₦4 billion.', 'The budget is balanced… on my head.'],
+      3: ['Who audit me?! Who send you?!'],
+      5: ['THE CALCULATOR DON CATCH FIRE!'],
+    },
+    promises: ['Budget of ₦900 trillion for one pencil!', 'Free calculators that only add!', 'Receipts are now optional!'],
+  },
+  {
+    id: 'gov-light-off',
+    name: 'Governor Light-Off',
+    title: 'His Excellency of Generators',
+    bio: 'Commissioned the same transformer seven times. Owns three generators, none for the people.',
+    unlockCost: 400_000,
+    coinBonus: 1.8,
+    look: {
+      skin: '#7a4a1c',
+      skinShade: '#5a3412',
+      robe: '#ef6c00',
+      robeTrim: '#212121',
+      robePattern: 'dots',
+      cap: '#212121',
+      capTrim: '#ef6c00',
+      headwear: 'bowler',
+      facialHair: 'moustache',
+      build: 'stout',
+      accessories: ['mic', 'sunglasses'],
+    },
+    lines: {
+      0: ['Light dey come! Hold your candle.', 'Up NEPA! Wait… who off am?'],
+      2: ['Why everywhere hot like this?!'],
+      4: ['Somebody on the gen! I no fit see!'],
+    },
+    promises: ['Commissioning the same transformer — 8th time!', 'Generator for every street… mine!', 'Darkness is now energy saving!'],
+  },
+  {
+    id: 'prince-abroad',
+    name: 'Prince Medical Abroad',
+    title: 'Ambassador of Checkups',
+    bio: 'Runs the country by video call from a hospital "abroad". Very healthy, thank you.',
+    unlockCost: 1_500_000,
+    coinBonus: 2.2,
+    look: {
+      skin: '#9a5b2e',
+      skinShade: '#73411d',
+      robe: '#4a148c',
+      robeTrim: '#ffd700',
+      robePattern: 'embroidery',
+      cap: '#ffd700',
+      capTrim: '#4a148c',
+      headwear: 'beret',
+      facialHair: 'beard',
+      build: 'tall',
+      accessories: ['passport', 'sunglasses'],
+    },
+    lines: {
+      0: ['Hello from my checkup! Network is bad.', 'I am hale and hearty… cough.'],
+      3: ['Book my flight! BOOK MY FLIGHT!'],
+      5: ['Doctor! DOCTOR! The tapping is too much!'],
+    },
+    promises: ['World-class hospitals… in another country!', 'Free medical trips for ministers!', 'Fly-in governance every Monday!'],
+  },
+  {
+    id: 'coming-soon-1',
+    name: '???',
+    title: 'New candidate loading…',
+    bio: 'A fresh aspirant is printing posters. Check back soon — the roster never ends.',
+    unlockCost: 0,
+    coinBonus: 1,
+    comingSoon: true,
+    look: {
+      skin: '#333',
+      skinShade: '#222',
+      robe: '#333',
+      robeTrim: '#444',
+      robePattern: 'stripes',
+      cap: '#444',
+      capTrim: '#555',
+      headwear: 'fila',
+      facialHair: 'none',
+      build: 'round',
+      accessories: [],
+    },
+  },
+]
+
+/** Generic voice lines per stage (0 Fresh → 5 Meltdown). */
+export const GENERIC_LINES: Record<number, string[]> = {
+  0: ['My people, I greet you!', 'Vote wisely o!', 'I am a man of the people!', 'Dividends of democracy loading…'],
+  1: ['Ehen? Who touch me?', 'Abeg calm down small.', 'My glasses! Steady!', 'Na who dey tap me like this?'],
+  2: ['Wetin be this sweat?!', 'My cap! My cap is shaking!', 'Haba! Respect my office!', 'Somebody call security!'],
+  3: ['Abeg, na wetin I do?', 'I go report you to INEC!', 'This one na enemy of progress!', 'My agbada don rumple!'],
+  4: ['Mama mi o!', 'Na so una go do me?', 'I don work… I mean, I don chop… I mean WORK!', 'Even my driver dey laugh me!'],
+  5: ['WAHALA DON LAND!!!', 'I resign! I un-resign!', 'Na village people!', 'I DECLARE A STATE OF EMERGENCY ON MY FACE!'],
+}
+
+export const GENERIC_PROMISES = [
+  'Free fuel for anybody wey get generator!',
+  'Every road will be tarred… with promises!',
+  'Jobs for all youths — starting with my nephews!',
+  'Traffic will be abolished by decree!',
+  'I will make Monday a Friday!',
+  'Every family gets one bag of rice… to share!',
+]
+
+/** Replace the roster with one served by the backend (admin-managed). */
+export function registerCharacters(defs: CharacterDef[]) {
+  CHARACTERS.splice(0, CHARACTERS.length, ...defs)
+}
+
+export const playableCharacters = () => CHARACTERS.filter((c) => !c.comingSoon)
+
+export const getCharacter = (id: string): CharacterDef =>
+  CHARACTERS.find((c) => c.id === id) ?? CHARACTERS[0]
+
+export function randomLine(c: CharacterDef, stage: number): string {
+  const pool = [...(GENERIC_LINES[stage] ?? []), ...(c.lines?.[stage] ?? [])]
+  return pool[Math.floor(Math.random() * pool.length)]
+}
