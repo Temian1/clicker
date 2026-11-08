@@ -8,7 +8,7 @@ A Nigerian political-satire clicker, rebuilt from the old Banana Clicker in **Re
 tap-the-politician/
 ├── frontend/   React 19 · TypeScript · Vite 8 · Three.js (React Three Fiber + drei) · Tailwind 4 · Motion · Zustand
 ├── backend/    Laravel 13 · Sanctum API · leaderboards · overtake alerts · admin   → see backend/API.md
-└── docs/       CHARACTER_PROMPTS.md: prompts for generating character art with ChatGPT
+└── docs/       CHARACTER_PROMPTS.md (art prompts) · CODEX_CHARACTER_BRIEF.md (brief for Codex to add characters)
 ```
 
 ## Features
