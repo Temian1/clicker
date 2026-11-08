@@ -1,22 +1,22 @@
 import type { ChallengeMetric, DailyChallenge, StageInfo, UpgradeDef, UpgradeId } from './types'
 
 // ---------------------------------------------------------------------------
-// Stages: the cartoon transformation. Measured in "wahala" points
-// (taps × tap power). Each completed meltdown re-elects the politician into a
-// new term with higher thresholds — so the game never ends.
+// Stages: each run's score is added to the selected politician's "wahala".
+// As wahala builds they move through 6 poses; at the meltdown you LEVEL UP and
+// the next politician in the cast steps up. Each lap of the cast = a new,
+// harder term, so the game never ends.
 // ---------------------------------------------------------------------------
 export const STAGES: StageInfo[] = [
   { index: 0, name: 'Fresh Agbada', tagline: 'Confident smile, ironed agbada', min: 0, color: '#00a859' },
-  { index: 1, name: 'Who Touch Me?', tagline: 'Face changes, sunglasses shake', min: 100, color: '#3ec7ff' },
-  { index: 2, name: 'Sweating Small', tagline: 'Sweat drops, crooked cap', min: 500, color: '#ffc93c' },
-  { index: 3, name: 'Abeg, Na Wetin I Do?', tagline: 'Rumpled agbada, complaints', min: 2_000, color: '#ff9f1c' },
-  { index: 4, name: 'Cartoon Tears', tagline: 'Dramatic tears, wild reactions', min: 5_000, color: '#ff4d4d' },
-  { index: 5, name: 'Wahala Don Land', tagline: 'Full meltdown!', min: 10_000, color: '#9b5cff' },
+  { index: 1, name: 'Who Touch Me?', tagline: 'Surprised, starting to sweat', min: 300, color: '#3ec7ff' },
+  { index: 2, name: 'Sweating Small', tagline: 'Nervous grin, sweat drops', min: 900, color: '#ffc93c' },
+  { index: 3, name: 'Abeg, Na Wetin I Do?', tagline: 'Complaining loudly', min: 1_800, color: '#ff9f1c' },
+  { index: 4, name: 'Cartoon Tears', tagline: 'Dramatic tears', min: 2_800, color: '#ff4d4d' },
+  { index: 5, name: 'Wahala Don Land', tagline: 'Full meltdown!', min: 3_800, color: '#9b5cff' },
 ]
 
-/** Wahala needed to finish a term and trigger the meltdown. */
 export const termScale = (term: number) => 1 + (term - 1) * 0.6
-export const meltdownAt = (term: number) => Math.round(12_000 * termScale(term))
+export const meltdownAt = (term: number) => Math.round(4_500 * termScale(term))
 
 export function stageFor(wahala: number, term: number): number {
   const s = termScale(term)
@@ -30,104 +30,96 @@ export function stageProgress(wahala: number, term: number) {
   const stage = stageFor(wahala, term)
   const cur = STAGES[stage].min * s
   const next = stage < 5 ? STAGES[stage + 1].min * s : meltdownAt(term)
-  return { stage, pct: Math.min(1, (wahala - cur) / Math.max(1, next - cur)), next }
+  return { stage, pct: Math.min(1, (wahala - cur) / Math.max(1, next - cur)), next, total: wahala / meltdownAt(term) }
 }
 
-export const meltdownReward = (term: number, bonus: number) => Math.round(2_500 * term * term * bonus)
+export const meltdownReward = (term: number, bonus: number) => Math.round(1_500 * term * term * bonus)
 
 // ---------------------------------------------------------------------------
-// Upgrades
+// Upgrades (deliberately expensive: you have to grind runs to afford them)
 // ---------------------------------------------------------------------------
 export const UPGRADES: UpgradeDef[] = [
   {
-    id: 'tapPower',
+    id: 'coinValue',
     name: 'Loud Microphone',
-    description: 'More coins & wahala per tap',
+    description: 'More coins from every run',
     icon: 'mic',
-    baseCost: 300,
+    baseCost: 500,
     growth: 1.9,
-    maxLevel: 200,
-    effectLabel: (l) => `+${tapPowerFor(l)} / tap`,
+    maxLevel: 40,
+    effectLabel: (l) => `+${Math.round((coinMultFor(l) - 1) * 100)}% coins`,
   },
   {
-    id: 'maxEnergy',
-    name: 'Bigger Generator',
-    description: 'Raise your energy tank',
-    icon: 'bolt',
-    baseCost: 800,
-    growth: 1.95,
-    maxLevel: 100,
-    effectLabel: (l) => `${maxEnergyFor(l)} max`,
-  },
-  {
-    id: 'regen',
-    name: 'Solar Panel',
-    description: 'Energy refills faster',
-    icon: 'sun',
-    baseCost: 1_500,
-    growth: 2.1,
-    maxLevel: 50,
-    effectLabel: (l) => `${regenFor(l)}/s`,
-  },
-  {
-    id: 'autoTap',
-    name: 'Hype Man Aide',
-    description: 'Earns coins automatically, even offline (3h)',
-    icon: 'robot',
-    baseCost: 5_000,
-    growth: 1.85,
-    maxLevel: 300,
-    effectLabel: (l) => `${autoFor(l)}/s`,
-  },
-  {
-    id: 'comboCap',
-    name: 'Crowd Hype',
-    description: 'Higher combo multiplier cap',
-    icon: 'fire',
-    baseCost: 15_000,
-    growth: 2.6,
-    maxLevel: 20,
-    effectLabel: (l) => `x${comboCapFor(l).toFixed(1)} max`,
-  },
-  {
-    id: 'crit',
-    name: 'Ghana-Must-Go Bag',
-    description: 'Chance of a x10 jackpot tap',
+    id: 'basket',
+    name: 'Wide Basket',
+    description: 'Promise Catcher: bigger basket',
     icon: 'bag',
-    baseCost: 40_000,
+    baseCost: 1_200,
+    growth: 2.2,
+    maxLevel: 10,
+    effectLabel: (l) => `${Math.round(basketWidthFor(l) * 100)}% width`,
+  },
+  {
+    id: 'magnet',
+    name: 'Naira Magnet',
+    description: 'Promise Catcher: pulls good items in',
+    icon: 'coin',
+    baseCost: 3_000,
+    growth: 2.3,
+    maxLevel: 10,
+    effectLabel: (l) => (l === 0 ? 'none' : `${magnetFor(l)}px pull`),
+  },
+  {
+    id: 'lives',
+    name: 'Extra Heart',
+    description: 'Both games: +1 heart per run',
+    icon: 'star',
+    baseCost: 8_000,
+    growth: 4,
+    maxLevel: 3,
+    effectLabel: (l) => `${3 + l} hearts`,
+  },
+  {
+    id: 'luck',
+    name: 'Golden Ballot',
+    description: 'More golden items & golden politicians (x5)',
+    icon: 'crown',
+    baseCost: 15_000,
     growth: 2.4,
-    maxLevel: 25,
-    effectLabel: (l) => `${Math.round(critFor(l) * 100)}% jackpot`,
+    maxLevel: 10,
+    effectLabel: (l) => `${Math.round(luckFor(l) * 100)}% golden`,
+  },
+  {
+    id: 'calm',
+    name: 'Calm Crowd',
+    description: 'Both games speed up more slowly',
+    icon: 'clock',
+    baseCost: 5_000,
+    growth: 2.2,
+    maxLevel: 8,
+    effectLabel: (l) => `-${l * 6}% speed-up`,
   },
 ]
 
 export const upgradeCost = (u: UpgradeDef, level: number) => Math.round(u.baseCost * Math.pow(u.growth, level))
-export const tapPowerFor = (l: number) => 1 + l + Math.floor(l * l * 0.05)
-export const maxEnergyFor = (l: number) => 500 + l * 250
-export const regenFor = (l: number) => 2 + l
-export const autoFor = (l: number) => (l === 0 ? 0 : Math.round(l * 2 + Math.pow(l, 1.6)))
-export const comboCapFor = (l: number) => 3 + l * 0.5
-export const critFor = (l: number) => Math.min(0.5, l * 0.02)
-
 export const getUpgrade = (id: UpgradeId) => UPGRADES.find((u) => u.id === id)!
 
-// Boss rally
-export const bossTarget = (lvl: number) => Math.min(300, 110 + 18 * (lvl - 1))
-export const bossTime = (lvl: number) => Math.max(20, 30 - Math.max(0, lvl - 12))
-export const bossReward = (lvl: number) => Math.round(3_000 * Math.pow(1.45, lvl - 1))
+export const coinMultFor = (l: number) => 1 + l * 0.15
+export const basketWidthFor = (l: number) => 1 + l * 0.08
+export const magnetFor = (l: number) => l * 14
+export const livesFor = (l: number) => 3 + l
+export const luckFor = (l: number) => 0.03 + l * 0.02
+export const calmFor = (l: number) => 1 - l * 0.06
 
-// Combo
-export const COMBO_WINDOW_MS = 700
-export const comboMultiplier = (combo: number, cap: number) => Math.min(cap, 1 + Math.floor(combo / 20) * 0.25)
+/** Combo multiplier shared by both games. */
+export const comboMult = (combo: number) => Math.min(3, 1 + Math.floor(combo / 10) * 0.5)
 
-// Boosts (per day)
-export const BOOSTS = {
-  refill: { name: 'Full Tank', description: 'Refill all energy instantly', perDay: 3 },
-  turbo: { name: 'Turbo Rally', description: 'x5 coins for 20 seconds', perDay: 3, durationMs: 20_000, mult: 5 },
-} as const
+/** Coins awarded for a finished run. */
+export const runCoins = (score: number, coinLvl: number, charBonus: number, modMult: number) =>
+  Math.round(score * coinMultFor(coinLvl) * charBonus * modMult)
 
-// Daily login streak rewards (day 1..7, then loops at day 7 value × weeks)
-export const STREAK_REWARDS = [500, 1_000, 2_500, 5_000, 10_000, 15_000, 25_000]
+// Daily login streak rewards (day 1..7, then loops ×weeks)
+export const STREAK_REWARDS = [300, 600, 1_200, 2_500, 5_000, 8_000, 15_000]
 
 // ---------------------------------------------------------------------------
 // Daily challenges, seeded by date so every player gets the same set per day
@@ -149,17 +141,18 @@ export const seeded = (key: string) => {
 }
 
 const TEMPLATES: { metric: ChallengeMetric; targets: number[]; label: (n: number) => string; reward: number }[] = [
-  { metric: 'taps', targets: [500, 1_000, 2_000], label: (n) => `Tap ${n.toLocaleString()} times`, reward: 1.0 },
-  { metric: 'coins', targets: [5_000, 20_000, 50_000], label: (n) => `Earn ${n.toLocaleString()} coins`, reward: 1.2 },
-  { metric: 'maxCombo', targets: [50, 100, 200], label: (n) => `Hit a ${n} tap combo`, reward: 1.1 },
-  { metric: 'bossWins', targets: [1, 2, 3], label: (n) => `Win ${n} rally boss fight${n > 1 ? 's' : ''}`, reward: 1.5 },
-  { metric: 'stageUps', targets: [2, 4, 6], label: (n) => `Trigger ${n} stage changes`, reward: 1.3 },
-  { metric: 'duelWins', targets: [1, 2], label: (n) => `Win ${n} tap duel${n > 1 ? 's' : ''}`, reward: 1.5 },
-  { metric: 'upgrades', targets: [3, 5, 8], label: (n) => `Buy ${n} upgrades`, reward: 1.0 },
+  { metric: 'runs', targets: [3, 5, 8], label: (n) => `Play ${n} games`, reward: 1.0 },
+  { metric: 'coins', targets: [2_000, 6_000, 15_000], label: (n) => `Earn ${n.toLocaleString()} coins`, reward: 1.2 },
+  { metric: 'catcherBest', targets: [300, 600, 1_000], label: (n) => `Score ${n} in Promise Catcher`, reward: 1.3 },
+  { metric: 'whackBest', targets: [250, 500, 800], label: (n) => `Score ${n} in Whack-a-Politician`, reward: 1.3 },
+  { metric: 'caught', targets: [50, 120, 250], label: (n) => `Catch ${n} good items`, reward: 1.1 },
+  { metric: 'whacked', targets: [40, 100, 200], label: (n) => `Vote out ${n} politicians`, reward: 1.1 },
+  { metric: 'maxCombo', targets: [15, 30, 50], label: (n) => `Reach a ${n} combo`, reward: 1.2 },
+  { metric: 'upgrades', targets: [1, 2, 3], label: (n) => `Buy ${n} upgrade${n > 1 ? 's' : ''}`, reward: 0.8 },
 ]
 
 export function dailyChallenges(dateKey: string): DailyChallenge[] {
-  const rnd = seeded('challenges-' + dateKey)
+  const rnd = seeded('challenges-v2-' + dateKey)
   const pool = [...TEMPLATES]
   const out: DailyChallenge[] = []
   for (let i = 0; i < 3; i++) {
@@ -170,7 +163,7 @@ export function dailyChallenges(dateKey: string): DailyChallenge[] {
       id: `${dateKey}-${t.metric}`,
       metric: t.metric,
       target,
-      reward: Math.round(((ti + 1) * 2_000 * t.reward) / 100) * 100,
+      reward: Math.round(((ti + 1) * 1_500 * t.reward) / 100) * 100,
       label: t.label(target),
     })
   }

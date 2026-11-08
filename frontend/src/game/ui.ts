@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { OvertakeAlert } from './types'
+import type { GameMode, OvertakeAlert } from './types'
 
-export type Screen = 'tap' | 'shop' | 'characters' | 'battle' | 'ranks'
+export type Screen = 'play' | 'shop' | 'characters' | 'ranks'
 export type Modal = null | 'menu' | 'settings' | 'support' | 'profile' | 'daily' | 'howto' | 'share' | 'inbox'
 
 export interface Toast {
@@ -16,6 +16,10 @@ export interface Toast {
 interface UiState {
   screen: Screen
   modal: Modal
+  /** active game (full-screen) or null on the menus */
+  game: GameMode | null
+  startGame(m: GameMode): void
+  endGame(): void
   toasts: Toast[]
   setScreen(s: Screen): void
   open(m: Modal): void
@@ -26,8 +30,11 @@ interface UiState {
 
 let tid = 0
 export const useUi = create<UiState>()((set) => ({
-  screen: 'tap',
+  screen: 'play',
   modal: null,
+  game: null,
+  startGame: (game) => set({ game, modal: null }),
+  endGame: () => set({ game: null, screen: 'play' }),
   toasts: [],
   setScreen: (screen) => set({ screen }),
   open: (modal) => set({ modal }),

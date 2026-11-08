@@ -84,6 +84,64 @@ class GameApiTest extends TestCase
             ->assertJsonPath('accepted.taps', 125); // 25 taps/s × 5s first-sync window
     }
 
+    public function test_runs_are_recorded_and_update_best_scores(): void
+    {
+        $t = $this->guest('dev-runner', 'Runner');
+        $this->player($t)->postJson('/api/runs', ['runs' => [
+            ['mode' => 'catcher', 'score' => 420, 'duration_ms' => 60000, 'max_combo' => 22, 'character_id' => 'chief-promise'],
+            ['mode' => 'catcher', 'score' => 310, 'duration_ms' => 50000],
+            ['mode' => 'whack', 'score' => 650, 'duration_ms' => 45000],
+        ]])->assertCreated()->assertJsonCount(3, 'data');
+
+        $p = $this->player($t)->getJson('/api/progress')->assertOk()->json('data');
+        $this->assertSame(420, $p['best_catcher']);
+        $this->assertSame(650, $p['best_whack']);
+        $this->assertSame(3, $p['total_runs']);
+    }
+
+    public function test_impossible_run_scores_are_clamped_and_flagged(): void
+    {
+        $t = $this->guest('dev-fast', 'TooFast');
+        $this->player($t)->postJson('/api/runs', ['runs' => [
+            ['mode' => 'whack', 'score' => 999999, 'duration_ms' => 45000],
+        ]])->assertCreated()
+            ->assertJsonPath('data.0.score', 2700) // 60 pts/s × 45s
+            ->assertJsonPath('data.0.flagged', true);
+    }
+
+    public function test_game_leaderboard_ranks_best_run_per_player(): void
+    {
+        $a = $this->guest('dev-ga', 'Ada');
+        $b = $this->guest('dev-gb', 'Bayo');
+        $this->player($a)->postJson('/api/runs', ['runs' => [
+            ['mode' => 'catcher', 'score' => 300, 'duration_ms' => 60000],
+            ['mode' => 'catcher', 'score' => 900, 'duration_ms' => 60000],
+        ]]);
+        $this->player($b)->postJson('/api/runs', ['runs' => [['mode' => 'catcher', 'score' => 500, 'duration_ms' => 60000]]]);
+        // whack runs must not leak into the catcher board
+        $this->player($b)->postJson('/api/runs', ['runs' => [['mode' => 'whack', 'score' => 2000, 'duration_ms' => 45000]]]);
+
+        $this->player($b)->getJson('/api/leaderboard?board=catcher&period=daily')
+            ->assertOk()
+            ->assertJsonPath('board', 'catcher')
+            ->assertJsonPath('entries.0.name', 'Ada')
+            ->assertJsonPath('entries.0.score', 900)
+            ->assertJsonPath('me.score', 500)
+            ->assertJsonPath('me.rank', 2)
+            ->assertJsonPath('total', 2);
+
+        $this->player($a)->getJson('/api/leaderboard?board=whack&period=all')
+            ->assertOk()
+            ->assertJsonPath('entries.0.name', 'Bayo')
+            ->assertJsonPath('me.rank', 2);
+    }
+
+    public function test_removed_duel_endpoints_are_gone(): void
+    {
+        $t = $this->guest('dev-old', 'Old');
+        $this->player($t)->getJson('/api/duels/opponent')->assertNotFound();
+    }
+
     public function test_only_admins_can_add_characters(): void
     {
         $this->seed();

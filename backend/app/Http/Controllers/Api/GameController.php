@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Character;
-use App\Models\LeaderboardScore;
 use App\Models\OvertakeAlert;
 use App\Models\SupportTicket;
 use App\Services\LeaderboardService;
@@ -13,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 /**
- * Smaller game endpoints: roster, leaderboard, alerts, battles, support.
+ * Smaller game endpoints: roster, leaderboards, alerts, support.
  */
 class GameController extends Controller
 {
@@ -29,11 +28,12 @@ class GameController extends Controller
 
     public function leaderboard(Request $request): JsonResponse
     {
-        $period = $request->validate([
+        $data = $request->validate([
             'period' => ['nullable', Rule::in(LeaderboardService::PERIODS)],
-        ])['period'] ?? 'daily';
+            'board' => ['nullable', Rule::in(LeaderboardService::BOARDS)],
+        ]);
 
-        return response()->json($this->boards->board($period, $request->user()));
+        return response()->json($this->boards->board($data['period'] ?? 'daily', $request->user(), $data['board'] ?? 'coins'));
     }
 
     /** "X passed you" alerts for the current player. */
@@ -72,59 +72,6 @@ class GameController extends Controller
         $count = $q->update(['read_at' => now()]);
 
         return response()->json(['marked' => $count]);
-    }
-
-    /** Ghost opponent for the 60s tap duel: a real ranked player near your score. */
-    public function duelOpponent(Request $request): JsonResponse
-    {
-        $me = $request->user();
-        $key = $this->boards->keys()['all'];
-        $myScore = (int) (LeaderboardScore::where(['user_id' => $me->id, 'period' => 'all', 'period_key' => $key])->value('score') ?? 0);
-
-        $pool = LeaderboardScore::with('user:id,name,avatar', 'user.progress')
-            ->where('period', 'all')
-            ->where('user_id', '!=', $me->id)
-            ->orderByRaw('ABS(CAST(score AS SIGNED) - ?)', [$myScore])
-            ->limit(10)
-            ->get();
-        $opponent = $pool->isEmpty() ? null : $pool->random();
-
-        $best = (int) ($opponent?->user?->progress?->best_duel ?? 0);
-
-        return response()->json([
-            'name' => $opponent?->user?->name ?? 'Ghost Tapper',
-            'avatar' => $opponent?->user?->avatar ?? '👻',
-            // taps-per-second the ghost will play at
-            'tps' => $best > 0 ? round(min(12, $best / 60), 2) : round(4 + mt_rand(0, 300) / 100, 2),
-        ]);
-    }
-
-    public function bossResult(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'win' => ['required', 'boolean'],
-            'taps' => ['required', 'integer', 'min:0', 'max:2000'],
-            'level' => ['required', 'integer', 'min:1'],
-        ]);
-        $p = $request->user()->progress()->firstOrCreate([]);
-        $p->update([
-            'best_boss' => max($p->best_boss, $data['taps']),
-            'boss_level' => $data['win'] ? max($p->boss_level, $data['level'] + 1) : $p->boss_level,
-        ]);
-
-        return response()->json(['data' => $p->only(['best_boss', 'boss_level'])]);
-    }
-
-    public function duelResult(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'win' => ['required', 'boolean'],
-            'taps' => ['required', 'integer', 'min:0', 'max:1500'],
-        ]);
-        $p = $request->user()->progress()->firstOrCreate([]);
-        $p->update(['best_duel' => max($p->best_duel, $data['taps'])]);
-
-        return response()->json(['data' => $p->only(['best_duel'])]);
     }
 
     public function support(Request $request): JsonResponse

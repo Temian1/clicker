@@ -13,17 +13,21 @@ tap-the-politician/
 
 ## Features
 
-- **Layered SVG characters** that react to taps. Robe, pattern, wrinkles, eyes, brows, mouth, sunglasses, headwear, sweat, tears, steam and props all change on their own across 6 stages (Fresh Agbada → Wahala Don Land). Each character is defined by data, so a new politician is just a config object.
-- **Three.js scene** with floating 3D gold coins, a rotating rally sunburst, and instanced confetti bursts on stage-ups, meltdowns and wins.
-- **Tap feel**: multi-touch, 3D tilt toward the tap point, squash and stretch, floating `+N` numbers, combo multiplier, x10 jackpot taps, haptics, speech bubbles ("Abeg, na wetin I do?"), optional TTS voice lines, synthesized SFX and an afrobeat-style loop.
-- **Economy**: tap coins, energy (generator), 6 upgrades, Hype Man auto-earner with offline income, Full Tank and Turbo Rally boosts, character unlocks with coin bonuses.
-- **Economy Wahala events**: every 1–2 minutes the economy hits your pocket (petrol price hike, Naira falls, new tax, bank charges, toll gate, NEPA tariff). Tap fast to PROTEST and block it, or lose coins, energy, or tap earnings for a while. Rare palliative events pay out if you tap fast enough.
-- **Levels**: each meltdown is a level-up that unlocks and moves you to the next politician in the cast.
-- **Endless progression**: terms 1, 2, 3 and on with higher thresholds and bigger rewards.
-- **Battle**: Rally Boss (fill the comedy meter before the absurd promises run out; levels never stop) and Tap Duel (60 seconds against a ghost of a ranked player).
-- **Leaderboard**: daily, weekly and all-time, with a podium and personal highscores. **When someone passes you, you get a pop-up, a sound, a vibration and a badge.**
-- **Daily**: login-streak rewards and 3 date-seeded challenges per day.
-- **Menus**: profile and avatar, settings, alerts inbox, how to play, support (FAQ + contact form), and a WhatsApp share card (PNG screenshot plus share link).
+Two arcade games starring the cast:
+
+- **Promise Catcher**: the politician paces the rally stage throwing things. Drag the "Ghana-must-go" basket to catch dividends (💵 🍚 🍞 💡 📚), dodge empty promises 💬, fuel prices ⛽ and tax bills 🧾, and grab power-ups (🧲 magnet, ⭐ x2, 🛡️ shield, 🐢 slow-mo, ❤️). It speeds up forever; three bad catches and it's over.
+- **Whack-a-Politician**: 45 seconds, 9 podiums. Tap politicians to VOTE THEM OUT before they duck, never tap citizens 👩🏾‍🌾, golden politicians are x5 and ⏱️ adds time.
+
+Around them:
+
+- **Levels through the cast**: every run's score fills the current politician's wahala meter through 6 sprite poses (they panic live during the run). At the meltdown you level up and the next politician steps up; after the whole cast they return one term harder, so it never ends.
+- **Today's Wahala**: about 40% of runs get an economy twist (petrol price jump, Naira falls, NEPA blackout, tax season) that makes the run harder but pays bonus coins, or a rare palliative season.
+- **Combos** (up to x3), golden items, hearts.
+- **Shop** (deliberately expensive): coin bonus, wider basket, naira magnet, extra hearts, golden luck, calmer speed-up.
+- **Leaderboards**: coins, best Catcher score and best Whack score, each daily, weekly and all-time, with a pop-up whenever someone passes you.
+- **Daily**: login streak and 3 date-seeded challenges (play N games, score N, catch N, vote out N…).
+- **Three.js** background with 3D coins and confetti bursts on stage-ups, level-ups and new bests.
+- Menus: profile, settings, alerts inbox, how to play, support (FAQ + contact form), WhatsApp share card.
 
 ## Run the frontend
 
@@ -46,7 +50,7 @@ php artisan migrate --seed && php artisan serve       # http://localhost:8000
 VITE_API_URL=http://localhost:8000
 ```
 
-The full API contract is in [backend/API.md](backend/API.md). Run `php artisan test` for the feature tests (auth, sync, leaderboard ranks, overtake alerts, anti-cheat clamping, admin character creation).
+The full API contract is in [backend/API.md](backend/API.md). Run `php artisan test` for the feature tests (auth, sync, runs, per-game leaderboards, overtake alerts, anti-cheat clamping, admin character creation).
 
 ## Adding a character
 

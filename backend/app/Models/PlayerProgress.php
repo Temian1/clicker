@@ -10,8 +10,8 @@ class PlayerProgress extends Model
     protected $table = 'player_progress';
 
     protected $fillable = [
-        'user_id', 'total_earned', 'total_taps', 'best_combo', 'best_boss', 'best_duel',
-        'boss_level', 'selected_character', 'state', 'last_sync_at',
+        'user_id', 'total_earned', 'total_taps', 'best_combo', 'best_catcher', 'best_whack', 'total_runs',
+        'selected_character', 'state', 'last_sync_at',
     ];
 
     protected function casts(): array

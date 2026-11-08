@@ -93,7 +93,7 @@ export default function CharactersScreen() {
                   className="w-full text-sm"
                   onClick={() => {
                     select(c.id)
-                    setScreen('tap')
+                    setScreen('play')
                   }}
                 >
                   {isSel ? 'Selected' : 'Play'}

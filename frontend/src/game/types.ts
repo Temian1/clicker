@@ -46,7 +46,13 @@ export interface StageInfo {
   color: string
 }
 
-export type UpgradeId = 'tapPower' | 'maxEnergy' | 'regen' | 'autoTap' | 'comboCap' | 'crit'
+export type UpgradeId = 'coinValue' | 'basket' | 'magnet' | 'lives' | 'luck' | 'calm'
+
+/** The two game modes. */
+export type GameMode = 'catcher' | 'whack'
+
+/** Leaderboards: total coins earned, or best run score per game. */
+export type Board = 'coins' | GameMode
 
 export interface UpgradeDef {
   id: UpgradeId
@@ -80,7 +86,18 @@ export interface OvertakeAlert {
   read?: boolean
 }
 
-export type ChallengeMetric = 'taps' | 'coins' | 'maxCombo' | 'bossWins' | 'stageUps' | 'duelWins' | 'upgrades'
+export type ChallengeMetric = 'runs' | 'coins' | 'maxCombo' | 'catcherBest' | 'whackBest' | 'caught' | 'whacked' | 'upgrades'
+
+/** What a finished run reports back to the store. */
+export interface RunResult {
+  mode: GameMode
+  score: number
+  /** good items caught (catcher) or politicians voted out (whack) */
+  hits: number
+  maxCombo: number
+  durationMs: number
+  modifier: string | null
+}
 
 export interface DailyChallenge {
   id: string

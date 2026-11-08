@@ -1,5 +1,5 @@
 import { dayKey, seeded, weekKey } from '../game/progression'
-import type { LeaderboardEntry, Period } from '../game/types'
+import type { Board, GameMode, LeaderboardEntry, Period } from '../game/types'
 import type { GameApi, HeartbeatResult, LeaderboardResponse, PlayerSnapshot, SupportTicket } from './types'
 
 /**
@@ -9,7 +9,7 @@ import type { GameApi, HeartbeatResult, LeaderboardResponse, PlayerSnapshot, Sup
  * stop tapping — and you can overtake them back.
  */
 
-const KEY = 'ttp-mock-backend'
+const KEY = 'ttp-mock-backend-v2'
 const PERIODS: Period[] = ['daily', 'weekly', 'all']
 
 const NAMES = [
@@ -43,14 +43,14 @@ function makeBots(): Bot[] {
   return NAMES.map((name, i) => {
     const kind: Bot['kind'] = i < 8 ? 'top' : i < 28 ? 'mid' : 'rival'
     const all =
-      kind === 'top' ? Math.round(5e6 * (1 + rnd() * 9)) : kind === 'mid' ? Math.round(2e4 + rnd() * 6e5) : Math.round(50 + rnd() * 600)
-    const daily = kind === 'top' ? Math.round(5e4 + rnd() * 3e5) : kind === 'mid' ? Math.round(rnd() * 2e4) : Math.round(rnd() * 400)
+      kind === 'top' ? Math.round(5e5 * (1 + rnd() * 6)) : kind === 'mid' ? Math.round(1e4 + rnd() * 2e5) : Math.round(50 + rnd() * 600)
+    const daily = kind === 'top' ? Math.round(1.5e4 + rnd() * 5e4) : kind === 'mid' ? Math.round(rnd() * 1e4) : Math.round(rnd() * 400)
     return {
       id: `bot-${i}`,
       name,
       avatar: AVATARS[Math.floor(rnd() * AVATARS.length)],
       kind,
-      speed: kind === 'top' ? 30 + rnd() * 200 : kind === 'mid' ? 2 + rnd() * 25 : 0.55 + rnd() * 0.6,
+      speed: kind === 'top' ? 3 + rnd() * 20 : kind === 'mid' ? 0.5 + rnd() * 4 : 0.55 + rnd() * 0.6,
       scores: { daily, weekly: daily + Math.round(rnd() * daily * 4), all },
     }
   })
@@ -95,8 +95,19 @@ function aboveSets(s: MockState, me: PlayerSnapshot): Record<Period, string[]> {
   return out
 }
 
-function rankOf(s: MockState, me: PlayerSnapshot, p: Period) {
-  return s.bots.filter((b) => b.scores[p] > me.scores[p]).length + 1
+
+/** Simulated best run scores: they creep up through the day as bots "play". */
+function botBest(b: Bot, mode: GameMode, period: Period, s: MockState): number {
+  const rnd = seeded(`${b.id}-${mode}`)
+  const base =
+    b.kind === 'top' ? 1_400 + rnd() * 1_800 : b.kind === 'mid' ? 350 + rnd() * 1_100 : 120 + rnd() * 450
+  const scale = mode === 'whack' ? 0.8 : 1
+  const now = new Date()
+  const dayFrac = (now.getHours() * 60 + now.getMinutes()) / 1440
+  const dayRnd = seeded(`${b.id}-${mode}-${s.dayKey}`)()
+  const daily = base * (0.35 + 0.65 * Math.min(1, dayFrac * 1.4)) * (0.7 + dayRnd * 0.4)
+  const v = period === 'daily' ? daily : period === 'weekly' ? Math.max(daily, base * 1.05) : base * 1.35
+  return Math.round(v * scale)
 }
 
 export class LocalApi implements GameApi {
@@ -152,30 +163,20 @@ export class LocalApi implements GameApi {
     return result
   }
 
-  async leaderboard(period: Period, me: PlayerSnapshot): Promise<LeaderboardResponse> {
+  async leaderboard(board: Board, period: Period, me: PlayerSnapshot): Promise<LeaderboardResponse> {
     rollPeriods(this.s)
-    const rows: LeaderboardEntry[] = this.s.bots.map((b) => ({ id: b.id, name: b.name, avatar: b.avatar, score: b.scores[period], rank: 0 }))
-    const mine: LeaderboardEntry = { id: me.id, name: me.name, avatar: me.avatar, score: me.scores[period], rank: 0, isMe: true }
+    const score = (b: Bot) => (board === 'coins' ? b.scores[period] : botBest(b, board, period, this.s))
+    const rows: LeaderboardEntry[] = this.s.bots.map((b) => ({ id: b.id, name: b.name, avatar: b.avatar, score: score(b), rank: 0 }))
+    const myScore = board === 'coins' ? me.scores[period] : me.bests[board][period]
+    const mine: LeaderboardEntry = { id: me.id, name: me.name, avatar: me.avatar, score: myScore, rank: 0, isMe: true }
     rows.push(mine)
     rows.sort((a, b) => b.score - a.score || (a.isMe ? -1 : 1))
     rows.forEach((r, i) => (r.rank = i + 1))
-    return { period, entries: rows.slice(0, 50), me: { ...mine, rank: rankOf(this.s, me, period) }, total: rows.length }
-  }
-
-  async duelOpponent(me: PlayerSnapshot) {
-    const pool = this.s.bots.filter((b) => b.kind !== 'top')
-    const b = pool[Math.floor(Math.random() * pool.length)]
-    // ghost speed scales a little with the player's best combo
-    const tps = 4 + Math.random() * 3 + Math.min(4, me.bestCombo / 150)
-    return { name: b.name, avatar: b.avatar, tps }
+    return { board, period, entries: rows.slice(0, 50), me: { ...mine, rank: rows.findIndex((r) => r.isMe) + 1 }, total: rows.length }
   }
 
   async characters() {
     return null
-  }
-
-  async reportBattle() {
-    /* stored locally by the game store */
   }
 
   async sendSupport(t: SupportTicket) {

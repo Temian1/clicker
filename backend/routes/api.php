@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Admin\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GameController;
 use App\Http\Controllers\Api\ProgressController;
+use App\Http\Controllers\Api\RunController;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureNotBanned;
 use Illuminate\Support\Facades\Route;
@@ -33,9 +34,8 @@ Route::middleware(['auth:sanctum', EnsureNotBanned::class])->group(function () {
     Route::get('alerts', [GameController::class, 'alerts']);
     Route::post('alerts/read', [GameController::class, 'markAlertsRead']);
 
-    Route::get('duels/opponent', [GameController::class, 'duelOpponent']);
-    Route::post('duels/results', [GameController::class, 'duelResult']);
-    Route::post('boss/results', [GameController::class, 'bossResult']);
+    Route::get('runs', [RunController::class, 'index']);
+    Route::post('runs', [RunController::class, 'store'])->middleware('throttle:30,1');
 
     Route::post('support', [GameController::class, 'support'])->middleware('throttle:5,1');
 

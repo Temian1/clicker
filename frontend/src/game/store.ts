@@ -1,37 +1,27 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { CHARACTERS, getCharacter, playableCharacters, randomLine } from './characters'
+import { getModifier } from './events'
 import {
-  BOOSTS,
-  COMBO_WINDOW_MS,
   STREAK_REWARDS,
-  UPGRADES,
-  autoFor,
-  bossReward,
-  comboCapFor,
-  comboMultiplier,
-  critFor,
   dayKey,
   daysBetween,
   getUpgrade,
-  maxEnergyFor,
   meltdownAt,
   meltdownReward,
-  regenFor,
+  runCoins,
   stageFor,
-  tapPowerFor,
   upgradeCost,
   weekKey,
 } from './progression'
-import { PROTEST_WINDOW_MS, nextEventDelay, pickEvent, protestReward, protestTarget, type EconomyEvent } from './events'
-import type { ChallengeMetric, DailyChallenge, UpgradeId } from './types'
+import type { ChallengeMetric, DailyChallenge, GameMode, RunResult, UpgradeId } from './types'
 
 export interface CharProgress {
   unlocked: boolean
   wahala: number
   term: number
   meltdowns: number
-  taps: number
+  runs: number
 }
 
 export interface Profile {
@@ -43,16 +33,15 @@ export interface Profile {
 
 export interface DailyStats {
   key: string
-  taps: number
+  runs: number
   coins: number
   maxCombo: number
-  bossWins: number
-  stageUps: number
-  duelWins: number
+  catcherBest: number
+  whackBest: number
+  caught: number
+  whacked: number
   upgrades: number
   claimed: string[]
-  refillUsed: number
-  turboUsed: number
 }
 
 export interface Settings {
@@ -62,72 +51,67 @@ export interface Settings {
   voice: boolean
 }
 
-export interface TapResult {
+/** Everything the game-over screen needs to show. */
+export interface RunOutcome {
+  mode: GameMode
+  score: number
   coins: number
-  crit: boolean
-  combo: number
-  mult: number
+  newBest: boolean
+  best: number
   stageUp: number | null
-  meltdown: { reward: number; term: number; level: number; nextId: string; nextName: string; newUnlock: boolean } | null
-  protest: { def: EconomyEvent; reward: number } | null
+  meltdown: { reward: number; level: number; nextId: string; nextName: string; newUnlock: boolean; term: number } | null
+  /** wahala progress of the politician BEFORE the run (0-1 of meltdown) */
+  before: number
+  after: number
 }
 
 interface Persisted {
   profile: Profile | null
   coins: number
   totalEarned: number
-  totalTaps: number
-  energy: number
+  totalRuns: number
   upgrades: Record<UpgradeId, number>
   selected: string
   chars: Record<string, CharProgress>
-  best: { combo: number; boss: number; duel: number; jackpot: number; meltdowns: number }
+  best: { catcher: number; whack: number; combo: number; meltdowns: number }
   daily: DailyStats
-  period: { dayKey: string; weekKey: string; daily: number; weekly: number }
+  /** per-period coins + best scores, for the leaderboards */
+  period: {
+    dayKey: string
+    weekKey: string
+    daily: number
+    weekly: number
+    catcher: { daily: number; weekly: number }
+    whack: { daily: number; weekly: number }
+  }
   streak: { last: string | null; count: number }
-  turboUntil: number
-  /** economy wahala: tap earnings multiplier until this time */
-  nerfUntil: number
-  nerfMult: number
-  bossLevel: number
   /** Global level: +1 per meltdown. Each level moves you to the next cast member. */
   level: number
   settings: Settings
-  lastSeen: number
   pendingSync: { coins: number; taps: number }
+  pendingRuns: { mode: GameMode; score: number; durationMs: number; maxCombo: number; characterId: string }[]
 }
 
 interface Transient {
-  combo: number
-  lastTapAt: number
   bubble: { text: string; id: number } | null
   fxBurst: number
   fxBurstKind: 'stage' | 'meltdown' | 'win'
-  lastBubbleAt: number
-  event: { def: EconomyEvent; endsAt: number; taps: number; target: number } | null
-  nextEventAt: number
 }
 
 interface Actions {
   setProfile(name: string, avatar: string): void
   ensureDay(): void
-  tap(): TapResult | null
-  tick(dtMs: number): void
-  applyOffline(): { coins: number; ms: number } | null
+  finishRun(r: RunResult): RunOutcome
   buyUpgrade(id: UpgradeId): boolean
   unlockCharacter(id: string): boolean
   selectCharacter(id: string): void
-  useBoost(kind: 'refill' | 'turbo'): boolean
   claimChallenge(c: DailyChallenge): boolean
   claimStreak(): number
-  finishBoss(win: boolean, score: number): number
-  finishDuel(win: boolean, score: number): number
   say(text: string): void
   burst(kind: Transient['fxBurstKind']): void
-  maybeStartEvent(): EconomyEvent | null
-  expireEvent(): { def: EconomyEvent; lost: number } | null
   setSettings(p: Partial<Settings>): void
   takePendingSync(): { coins: number; taps: number }
+  takePendingRuns(): Persisted['pendingRuns']
   resetAll(): void
 }
 
@@ -135,53 +119,53 @@ export type GameState = Persisted & Transient & Actions
 
 const emptyDaily = (key: string): DailyStats => ({
   key,
-  taps: 0,
+  runs: 0,
   coins: 0,
   maxCombo: 0,
-  bossWins: 0,
-  stageUps: 0,
-  duelWins: 0,
+  catcherBest: 0,
+  whackBest: 0,
+  caught: 0,
+  whacked: 0,
   upgrades: 0,
   claimed: [],
-  refillUsed: 0,
-  turboUsed: 0,
 })
 
+const newChar = (unlocked: boolean): CharProgress => ({ unlocked, wahala: 0, term: 1, meltdowns: 0, runs: 0 })
+
 const initialChars = (): Record<string, CharProgress> =>
-  Object.fromEntries(
-    CHARACTERS.filter((c) => !c.comingSoon).map((c) => [
-      c.id,
-      { unlocked: c.unlockCost === 0, wahala: 0, term: 1, meltdowns: 0, taps: 0 },
-    ]),
-  )
+  Object.fromEntries(CHARACTERS.filter((c) => !c.comingSoon).map((c) => [c.id, newChar(c.unlockCost === 0)]))
+
+const emptyPeriod = (): Persisted['period'] => ({
+  dayKey: dayKey(),
+  weekKey: weekKey(),
+  daily: 0,
+  weekly: 0,
+  catcher: { daily: 0, weekly: 0 },
+  whack: { daily: 0, weekly: 0 },
+})
 
 const initial = (): Persisted => ({
   profile: null,
   coins: 0,
   totalEarned: 0,
-  totalTaps: 0,
-  energy: maxEnergyFor(0),
-  upgrades: { tapPower: 0, maxEnergy: 0, regen: 0, autoTap: 0, comboCap: 0, crit: 0 },
+  totalRuns: 0,
+  upgrades: { coinValue: 0, basket: 0, magnet: 0, lives: 0, luck: 0, calm: 0 },
   selected: CHARACTERS[0].id,
   chars: initialChars(),
-  best: { combo: 0, boss: 0, duel: 0, jackpot: 0, meltdowns: 0 },
+  best: { catcher: 0, whack: 0, combo: 0, meltdowns: 0 },
   daily: emptyDaily(dayKey()),
-  period: { dayKey: dayKey(), weekKey: weekKey(), daily: 0, weekly: 0 },
+  period: emptyPeriod(),
   streak: { last: null, count: 0 },
-  turboUntil: 0,
-  nerfUntil: 0,
-  nerfMult: 1,
-  bossLevel: 1,
   level: 1,
   settings: { sfx: true, music: true, haptics: true, voice: false },
-  lastSeen: Date.now(),
   pendingSync: { coins: 0, taps: 0 },
+  pendingRuns: [],
 })
 
 const PERSIST_KEYS = Object.keys(initial()) as (keyof Persisted)[]
 
 /** Pure helper: add earned coins to every counter that tracks earnings. */
-function earn(s: Persisted, n: number): Partial<Persisted> {
+function earn(s: Persisted, n: number): Pick<Persisted, 'coins' | 'totalEarned' | 'daily' | 'period' | 'pendingSync'> {
   return {
     coins: s.coins + n,
     totalEarned: s.totalEarned + n,
@@ -195,21 +179,16 @@ export const useGame = create<GameState>()(
   persist(
     (set, get) => ({
       ...initial(),
-      combo: 0,
-      lastTapAt: 0,
       bubble: null,
       fxBurst: 0,
       fxBurstKind: 'stage',
-      lastBubbleAt: 0,
-      event: null,
-      nextEventAt: Date.now() + 45_000,
 
       setProfile(name, avatar) {
         const p = get().profile
         set({
           profile: {
             id: p?.id ?? crypto.randomUUID(),
-            name: name.trim().slice(0, 18) || 'Oga Tapper',
+            name: name.trim().slice(0, 18) || 'Oga Player',
             avatar,
             createdAt: p?.createdAt ?? Date.now(),
           },
@@ -223,88 +202,95 @@ export const useGame = create<GameState>()(
         const patch: Partial<Persisted> = {}
         if (s.daily.key !== dk) patch.daily = emptyDaily(dk)
         if (s.period.dayKey !== dk || s.period.weekKey !== wk) {
+          const sameDay = s.period.dayKey === dk
+          const sameWeek = s.period.weekKey === wk
           patch.period = {
             dayKey: dk,
             weekKey: wk,
-            daily: s.period.dayKey === dk ? s.period.daily : 0,
-            weekly: s.period.weekKey === wk ? s.period.weekly : 0,
+            daily: sameDay ? s.period.daily : 0,
+            weekly: sameWeek ? s.period.weekly : 0,
+            catcher: { daily: sameDay ? s.period.catcher.daily : 0, weekly: sameWeek ? s.period.catcher.weekly : 0 },
+            whack: { daily: sameDay ? s.period.whack.daily : 0, weekly: sameWeek ? s.period.whack.weekly : 0 },
           }
         }
-        // Make sure newly-added characters exist in the save.
         const missing = CHARACTERS.filter((c) => !c.comingSoon && !s.chars[c.id])
         if (missing.length) {
           patch.chars = { ...s.chars }
-          for (const c of missing) patch.chars[c.id] = { unlocked: c.unlockCost === 0, wahala: 0, term: 1, meltdowns: 0, taps: 0 }
+          for (const c of missing) patch.chars[c.id] = newChar(c.unlockCost === 0)
         }
+        if (!s.chars[s.selected] && !patch.chars?.[s.selected]) patch.selected = playableCharacters()[0].id
         if (Object.keys(patch).length) set(patch)
       },
 
-      tap() {
+      finishRun(r) {
+        get().ensureDay()
         const s = get()
-        if (s.energy < 1) return null
-        const now = Date.now()
         const char = getCharacter(s.selected)
-        const cp = s.chars[s.selected]
-        if (!cp?.unlocked) return null
+        const cp = s.chars[s.selected] ?? newChar(true)
+        const mod = getModifier(r.modifier)
+        const coins = runCoins(r.score, s.upgrades.coinValue, char.coinBonus, mod.reward)
 
-        const combo = now - s.lastTapAt < COMBO_WINDOW_MS ? s.combo + 1 : 1
-        const mult = comboMultiplier(combo, comboCapFor(s.upgrades.comboCap))
-        const crit = Math.random() < critFor(s.upgrades.crit)
-        const power = tapPowerFor(s.upgrades.tapPower)
-        const turbo = s.turboUntil > now ? BOOSTS.turbo.mult : 1
-        const nerf = s.nerfUntil > now ? s.nerfMult : 1
-        const wahalaGain = Math.round(power * mult * (crit ? 10 : 1))
-        const coins = Math.max(1, Math.round(wahalaGain * turbo * nerf * char.coinBonus))
-
-        const before = stageFor(cp.wahala, cp.term)
-        let wahala = cp.wahala + wahalaGain
+        // wahala: the run's score pushes the politician through their poses
+        const beforeStage = stageFor(cp.wahala, cp.term)
+        const before = cp.wahala / meltdownAt(cp.term)
+        let wahala = cp.wahala + r.score
         let term = cp.term
-        let meltdowns = cp.meltdowns
-        let meltdown: TapResult['meltdown'] = null
+        let chars = s.chars
+        let meltdown: RunOutcome['meltdown'] = null
         let stageUp: number | null = null
         let bonus = 0
-        let chars = s.chars
+        let selected = s.selected
+        let level = s.level
 
         if (wahala >= meltdownAt(term)) {
           bonus = meltdownReward(term, char.coinBonus)
           term += 1
-          meltdowns += 1
           wahala = 0
-          // LEVEL UP → move on to the next politician in the cast (loops forever;
-          // each lap they come back one term harder).
+          // LEVEL UP → the next politician in the cast steps up (loops forever)
           const cast = playableCharacters()
           const idx = cast.findIndex((c) => c.id === s.selected)
           const next = cast[(idx + 1) % cast.length]
-          const nextCp = s.chars[next.id] ?? { unlocked: false, wahala: 0, term: 1, meltdowns: 0, taps: 0 }
+          const nextCp = s.chars[next.id] ?? newChar(false)
           chars = { ...s.chars, [next.id]: { ...nextCp, unlocked: true } }
-          meltdown = { reward: bonus, term: nextCp.term, level: s.level + 1, nextId: next.id, nextName: next.name, newUnlock: !nextCp.unlocked }
+          level = s.level + 1
+          selected = next.id
+          meltdown = { reward: bonus, level, nextId: next.id, nextName: next.name, newUnlock: !nextCp.unlocked, term: nextCp.term }
         } else {
-          const after = stageFor(wahala, term)
-          if (after > before) stageUp = after
+          const afterStage = stageFor(wahala, term)
+          if (afterStage > beforeStage) stageUp = afterStage
         }
+        chars = { ...chars, [s.selected]: { ...cp, wahala, term, meltdowns: cp.meltdowns + (meltdown ? 1 : 0), runs: cp.runs + 1 } }
 
+        const prevBest = s.best[r.mode]
         const e = earn(s, coins + bonus)
+        const per = e.period[r.mode]
         set({
           ...e,
-          energy: s.energy - 1,
-          totalTaps: s.totalTaps + 1,
-          combo,
-          lastTapAt: now,
-          chars: { ...chars, [s.selected]: { ...cp, wahala, term, meltdowns, taps: cp.taps + 1 } },
-          ...(meltdown ? { selected: meltdown.nextId, level: meltdown.level, combo: 0 } : {}),
+          chars,
+          selected,
+          level,
+          totalRuns: s.totalRuns + 1,
           best: {
             ...s.best,
-            combo: Math.max(s.best.combo, combo),
-            jackpot: crit ? Math.max(s.best.jackpot, coins) : s.best.jackpot,
+            [r.mode]: Math.max(prevBest, r.score),
+            combo: Math.max(s.best.combo, r.maxCombo),
             meltdowns: s.best.meltdowns + (meltdown ? 1 : 0),
           },
           daily: {
-            ...e.daily!,
-            taps: s.daily.taps + 1,
-            maxCombo: Math.max(s.daily.maxCombo, combo),
-            stageUps: s.daily.stageUps + (stageUp !== null || meltdown ? 1 : 0),
+            ...e.daily,
+            runs: s.daily.runs + 1,
+            maxCombo: Math.max(s.daily.maxCombo, r.maxCombo),
+            catcherBest: r.mode === 'catcher' ? Math.max(s.daily.catcherBest, r.score) : s.daily.catcherBest,
+            whackBest: r.mode === 'whack' ? Math.max(s.daily.whackBest, r.score) : s.daily.whackBest,
+            caught: s.daily.caught + (r.mode === 'catcher' ? r.hits : 0),
+            whacked: s.daily.whacked + (r.mode === 'whack' ? r.hits : 0),
           },
-          pendingSync: { coins: e.pendingSync!.coins, taps: s.pendingSync.taps + 1 },
+          period: { ...e.period, [r.mode]: { daily: Math.max(per.daily, r.score), weekly: Math.max(per.weekly, r.score) } },
+          pendingSync: { coins: e.pendingSync.coins, taps: s.pendingSync.taps + r.hits },
+          pendingRuns: [
+            ...s.pendingRuns.slice(-19),
+            { mode: r.mode, score: r.score, durationMs: r.durationMs, maxCombo: r.maxCombo, characterId: s.selected },
+          ],
         })
 
         if (meltdown) {
@@ -313,48 +299,21 @@ export const useGame = create<GameState>()(
         } else if (stageUp !== null) {
           get().burst('stage')
           get().say(randomLine(char, stageUp))
-        } else if (now - s.lastBubbleAt > 2500 && Math.random() < 0.06) {
-          get().say(randomLine(char, before))
+        } else if (r.score > prevBest && prevBest > 0) {
+          get().burst('win')
         }
 
-        // protest against an active economy event
-        let protest: TapResult['protest'] = null
-        const ev = get().event
-        if (ev && now < ev.endsAt) {
-          const taps = ev.taps + 1
-          if (taps >= ev.target) {
-            const reward = ev.def.kind === 'bonus' ? ev.def.amount * get().level : protestReward(get().level)
-            set((st) => ({ ...earn(st, reward), event: null, nextEventAt: now + nextEventDelay() }))
-            protest = { def: ev.def, reward }
-          } else set({ event: { ...ev, taps } })
+        return {
+          mode: r.mode,
+          score: r.score,
+          coins: coins + bonus,
+          newBest: r.score > prevBest,
+          best: Math.max(prevBest, r.score),
+          stageUp,
+          meltdown,
+          before,
+          after: meltdown ? 1 : wahala / meltdownAt(term),
         }
-
-        return { coins, crit, combo, mult, stageUp, meltdown, protest }
-      },
-
-      tick(dtMs) {
-        const s = get()
-        const max = maxEnergyFor(s.upgrades.maxEnergy)
-        const regen = (regenFor(s.upgrades.regen) * dtMs) / 1000
-        const auto = (autoFor(s.upgrades.autoTap) * dtMs) / 1000
-        const patch: Partial<GameState> = { energy: Math.min(max, s.energy + regen), lastSeen: Date.now() }
-        if (auto > 0) Object.assign(patch, earn(s, auto))
-        if (s.combo && Date.now() - s.lastTapAt > COMBO_WINDOW_MS * 1.6) patch.combo = 0
-        set(patch)
-      },
-
-      applyOffline() {
-        const s = get()
-        const ms = Math.min(Date.now() - s.lastSeen, 3 * 3600_000)
-        if (ms < 60_000) return null
-        const coins = Math.floor((autoFor(s.upgrades.autoTap) * ms) / 1000)
-        const max = maxEnergyFor(s.upgrades.maxEnergy)
-        set({
-          energy: Math.min(max, s.energy + (regenFor(s.upgrades.regen) * ms) / 1000),
-          lastSeen: Date.now(),
-          ...(coins > 0 ? earn(s, coins) : {}),
-        })
-        return coins > 0 ? { coins, ms } : null
       },
 
       buyUpgrade(id) {
@@ -363,13 +322,7 @@ export const useGame = create<GameState>()(
         const lvl = s.upgrades[id]
         const cost = upgradeCost(u, lvl)
         if (lvl >= u.maxLevel || s.coins < cost) return false
-        set({
-          coins: s.coins - cost,
-          upgrades: { ...s.upgrades, [id]: lvl + 1 },
-          daily: { ...s.daily, upgrades: s.daily.upgrades + 1 },
-          // a bigger generator also tops up the new capacity
-          energy: id === 'maxEnergy' ? s.energy + 250 : s.energy,
-        })
+        set({ coins: s.coins - cost, upgrades: { ...s.upgrades, [id]: lvl + 1 }, daily: { ...s.daily, upgrades: s.daily.upgrades + 1 } })
         return true
       },
 
@@ -383,26 +336,14 @@ export const useGame = create<GameState>()(
       },
 
       selectCharacter(id) {
-        if (get().chars[id]?.unlocked) set({ selected: id, combo: 0 })
-      },
-
-      useBoost(kind) {
-        const s = get()
-        const used = kind === 'refill' ? s.daily.refillUsed : s.daily.turboUsed
-        if (used >= BOOSTS[kind].perDay) return false
-        if (kind === 'refill') {
-          set({ energy: maxEnergyFor(s.upgrades.maxEnergy), daily: { ...s.daily, refillUsed: used + 1 } })
-        } else {
-          set({ turboUntil: Date.now() + BOOSTS.turbo.durationMs, daily: { ...s.daily, turboUsed: used + 1 } })
-        }
-        return true
+        if (get().chars[id]?.unlocked) set({ selected: id })
       },
 
       claimChallenge(c) {
         const s = get()
         if (s.daily.claimed.includes(c.id) || metricValue(s.daily, c.metric) < c.target) return false
         const e = earn(s, c.reward)
-        set({ ...e, daily: { ...e.daily!, claimed: [...s.daily.claimed, c.id] } })
+        set({ ...e, daily: { ...e.daily, claimed: [...s.daily.claimed, c.id] } })
         return true
       },
 
@@ -418,64 +359,8 @@ export const useGame = create<GameState>()(
         return reward
       },
 
-      finishBoss(win, score) {
-        const s = get()
-        const reward = win ? bossReward(s.bossLevel) : Math.round(score * 2)
-        const e = earn(s, reward)
-        set({
-          ...e,
-          bossLevel: win ? s.bossLevel + 1 : s.bossLevel,
-          best: { ...s.best, boss: Math.max(s.best.boss, score) },
-          daily: { ...e.daily!, bossWins: s.daily.bossWins + (win ? 1 : 0) },
-        })
-        if (win) get().burst('win')
-        return reward
-      },
-
-      finishDuel(win, score) {
-        const s = get()
-        const reward = win ? 2_000 + score * 10 : score * 2
-        const e = earn(s, reward)
-        set({
-          ...e,
-          best: { ...s.best, duel: Math.max(s.best.duel, score) },
-          daily: { ...e.daily!, duelWins: s.daily.duelWins + (win ? 1 : 0) },
-        })
-        if (win) get().burst('win')
-        return reward
-      },
-
       say(text) {
-        set({ bubble: { text, id: Date.now() }, lastBubbleAt: Date.now() })
-      },
-
-      maybeStartEvent() {
-        const s = get()
-        const now = Date.now()
-        if (s.event || now < s.nextEventAt || s.totalTaps < 50) return null
-        const def = pickEvent()
-        set({ event: { def, endsAt: now + PROTEST_WINDOW_MS, taps: 0, target: protestTarget(s.level) } })
-        return def
-      },
-
-      expireEvent() {
-        const s = get()
-        const ev = s.event
-        if (!ev || Date.now() < ev.endsAt) return null
-        const now = Date.now()
-        let lost = 0
-        const patch: Partial<GameState> = { event: null, nextEventAt: now + nextEventDelay() }
-        if (ev.def.kind === 'drain') {
-          lost = Math.floor(s.coins * ev.def.amount)
-          patch.coins = s.coins - lost
-        } else if (ev.def.kind === 'nerf') {
-          patch.nerfUntil = now + (ev.def.durationMs ?? 30_000)
-          patch.nerfMult = ev.def.amount
-        } else if (ev.def.kind === 'energy') {
-          patch.energy = s.energy * (1 - ev.def.amount)
-        }
-        set(patch)
-        return { def: ev.def, lost }
+        set({ bubble: { text, id: Date.now() } })
       },
 
       burst(kind) {
@@ -492,16 +377,42 @@ export const useGame = create<GameState>()(
         return p
       },
 
+      takePendingRuns() {
+        const p = get().pendingRuns
+        set({ pendingRuns: [] })
+        return p
+      },
+
       resetAll() {
-        set({ ...initial(), combo: 0, bubble: null })
+        set({ ...initial(), bubble: null })
       },
     }),
     {
       name: 'tap-the-politician',
-      version: 1,
+      // v2: tapper → Promise Catcher + Whack-a-Politician
+      version: 2,
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) =>
-        Object.fromEntries(PERSIST_KEYS.map((k) => [k, s[k]])) as unknown as GameState,
+      partialize: (s) => Object.fromEntries(PERSIST_KEYS.map((k) => [k, s[k]])) as unknown as GameState,
+      migrate: (old) => {
+        // keep coins, cast progress, level, profile and settings; reset tapper-only data
+        const o = (old ?? {}) as Partial<Persisted> & { chars?: Record<string, Partial<CharProgress>> }
+        const base = initial()
+        const chars = { ...base.chars }
+        for (const [id, c] of Object.entries(o.chars ?? {})) {
+          chars[id] = { ...newChar(!!c.unlocked), unlocked: !!c.unlocked, wahala: 0, term: c.term ?? 1, meltdowns: c.meltdowns ?? 0 }
+        }
+        return {
+          ...base,
+          profile: o.profile ?? null,
+          coins: o.coins ?? 0,
+          totalEarned: o.totalEarned ?? 0,
+          selected: o.selected ?? base.selected,
+          chars,
+          streak: o.streak ?? base.streak,
+          level: o.level ?? 1,
+          settings: { ...base.settings, ...o.settings },
+        } as unknown as GameState
+      },
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<Persisted>
         return {
@@ -511,6 +422,8 @@ export const useGame = create<GameState>()(
           settings: { ...current.settings, ...p.settings },
           best: { ...current.best, ...p.best },
           chars: { ...current.chars, ...p.chars },
+          period: { ...current.period, ...p.period },
+          daily: { ...current.daily, ...p.daily },
         }
       },
     },
@@ -518,11 +431,5 @@ export const useGame = create<GameState>()(
 )
 
 export function metricValue(d: DailyStats, m: ChallengeMetric): number {
-  return d[m]
+  return d[m] ?? 0
 }
-
-// Derived selectors
-export const useMaxEnergy = () => useGame((s) => maxEnergyFor(s.upgrades.maxEnergy))
-export const useTapPower = () => useGame((s) => tapPowerFor(s.upgrades.tapPower))
-export const useAutoRate = () => useGame((s) => autoFor(s.upgrades.autoTap))
-export const allUpgradeIds = UPGRADES.map((u) => u.id)

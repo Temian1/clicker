@@ -1,4 +1,4 @@
-import type { CharacterDef, LeaderboardEntry, OvertakeAlert, Period } from '../game/types'
+import type { Board, CharacterDef, LeaderboardEntry, OvertakeAlert, Period } from '../game/types'
 import type { GameApi, HeartbeatResult, LeaderboardResponse, PlayerSnapshot, SupportTicket } from './types'
 
 /**
@@ -43,6 +43,11 @@ export class LaravelApi implements GameApi {
   }
 
   async heartbeat(me: PlayerSnapshot): Promise<HeartbeatResult> {
+    if (me.runs.length) {
+      await this.req('POST', '/runs', {
+        runs: me.runs.map((r) => ({ mode: r.mode, score: r.score, duration_ms: Math.round(r.durationMs), max_combo: r.maxCombo, character_id: r.characterId })),
+      })
+    }
     const sync = await this.req<{ you_passed: { name: string; period: Period; new_rank: number }[] }>('POST', '/progress/sync', {
       coins: me.pending.coins,
       taps: me.pending.taps,
@@ -67,25 +72,16 @@ export class LaravelApi implements GameApi {
     }
   }
 
-  async leaderboard(period: Period): Promise<LeaderboardResponse> {
+  async leaderboard(board: Board, period: Period): Promise<LeaderboardResponse> {
     type Row = { user_id: string; name: string; avatar: string; score: number; rank: number; is_me?: boolean }
-    const r = await this.req<{ period: Period; entries: Row[]; me: Row; total: number }>('GET', `/leaderboard?period=${period}`)
+    const r = await this.req<{ board: Board; period: Period; entries: Row[]; me: Row; total: number }>('GET', `/leaderboard?board=${board}&period=${period}`)
     const map = (x: Row): LeaderboardEntry => ({ id: x.user_id, name: x.name, avatar: x.avatar, score: x.score, rank: x.rank, isMe: x.is_me })
-    return { period: r.period, entries: r.entries.map(map), me: { ...map(r.me), isMe: true }, total: r.total }
-  }
-
-  async duelOpponent() {
-    const r = await this.req<{ name: string; avatar: string; tps: number }>('GET', '/duels/opponent')
-    return r
+    return { board: r.board, period: r.period, entries: r.entries.map(map), me: { ...map(r.me), isMe: true }, total: r.total }
   }
 
   async characters() {
     const r = await this.req<{ data: CharacterDef[] }>('GET', '/characters')
     return r.data.length ? r.data : null
-  }
-
-  async reportBattle(kind: 'boss' | 'duel', r: { win: boolean; taps: number; level?: number }) {
-    await this.req('POST', kind === 'boss' ? '/boss/results' : '/duels/results', r)
   }
 
   async sendSupport(t: SupportTicket) {

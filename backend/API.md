@@ -36,13 +36,12 @@ Seeded admin: `admin@tapthepolitician.test` / `password` (change this before you
 | GET | `/characters` | – | `{data: CharacterDef[]}`, in the same shape as `frontend/src/game/types.ts`. Public. |
 | GET | `/progress` | – | Cloud save: `{data: PlayerProgress}` |
 | PUT | `/progress` | `{state: object, selected_character?}` | Overwrites the cloud save blob. |
-| **POST** | **`/progress/sync`** | `{coins, taps, character_id?, best_combo?}` | **Heartbeat, about every 4s.** Adds the delta to the daily, weekly and all-time boards and creates overtake alerts. Returns `{accepted:{coins,taps}, clamped:bool, you_passed:[{name, period, new_rank}]}` |
-| GET | `/leaderboard?period=daily\|weekly\|all` | – | `{period, entries:[{user_id,name,avatar,score,rank,is_me}], me:{…,rank}, total}` (top 50) |
+| **POST** | **`/progress/sync`** | `{coins, taps, character_id?, best_combo?}` | **Heartbeat, about every 4s.** Adds coins earned to the daily, weekly and all-time coin boards and creates overtake alerts. `taps` = items caught + politicians voted out. Returns `{accepted:{coins,taps}, clamped:bool, you_passed:[{name, period, new_rank}]}` |
+| **POST** | **`/runs`** | `{runs:[{mode: catcher\|whack, score, duration_ms, max_combo?, character_id?}]}` (1–20) | Stores finished runs (the client batches them into its heartbeat), updates `best_catcher` / `best_whack` / `total_runs`. Scores above `GAME_MAX_SCORE_PER_SECOND` × duration are clamped and `flagged`. 201 `{data:[{id, mode, score, flagged}]}` |
+| GET | `/runs` | – | The player's last 30 runs |
+| GET | `/leaderboard?board=coins\|catcher\|whack&period=daily\|weekly\|all` | – | `{board, period, entries:[{user_id,name,avatar,score,rank,is_me}], me:{…,rank}, total}` (top 50). `coins` = coins earned; `catcher`/`whack` = each player's best run score in the period |
 | GET | `/alerts?unread=1` | – | `{data:[{id, by_name, by_avatar, period, new_rank, read, created_at}]}` |
 | POST | `/alerts/read` | `{ids?: string[]}` | Marks the given alerts as read, or all of them when `ids` is omitted. `{marked}` |
-| GET | `/duels/opponent` | – | `{name, avatar, tps}`: a ranked player near your score, played as a ghost |
-| POST | `/duels/results` | `{win, taps}` | Updates `best_duel` |
-| POST | `/boss/results` | `{win, taps, level}` | Updates `best_boss` and `boss_level` |
 | POST | `/support` | `{category: bug\|idea\|account\|other, message, email?}` | 201 `{data: ticket}` |
 
 ### How "someone passed you" alerts work
@@ -51,7 +50,7 @@ Seeded admin: `admin@tapthepolitician.test` / `password` (change this before you
 
 ### Anti-cheat (basic)
 
-`/progress/sync` clamps each delta to `GAME_MAX_TAPS_PER_SECOND` (25) × elapsed seconds, and caps coins at `base + total_earned × growth` per second (see `config/game.php`). The response sets `clamped: true` when it trims a delta. Admins can ban a player with `POST /admin/users/{id}/ban`.
+`/runs` clamps each run's score to `GAME_MAX_SCORE_PER_SECOND` (60) × its duration and flags it. `/progress/sync` clamps each delta to `GAME_MAX_TAPS_PER_SECOND` (25) × elapsed seconds, and caps coins at `base + total_earned × growth` per second (see `config/game.php`). The response sets `clamped: true` when it trims a delta. Admins can ban a player with `POST /admin/users/{id}/ban`.
 
 ## Admin (`is_admin` users only)
 
@@ -69,12 +68,23 @@ Allowed `look` values: `robePattern` stripes/dots/embroidery/zigzag · `headwear
 
 ## Tables
 
-`users` (+ `device_id`, `avatar`, `is_admin`, `is_banned`, `last_seen_at`) · `characters` · `player_progress` · `leaderboard_scores` (unique `user_id+period+period_key`, indexed by score) · `overtake_alerts` · `support_tickets` · `personal_access_tokens`.
+`users` (+ `device_id`, `avatar`, `is_admin`, `is_banned`, `last_seen_at`) · `characters` · `player_progress` (bests, total runs) · `game_runs` (every finished run, indexed by mode/date/score) · `leaderboard_scores` (unique `user_id+period+period_key`, indexed by score) · `overtake_alerts` · `support_tickets` · `personal_access_tokens`.
 
 Periods use `GAME_TIMEZONE` (default `Africa/Lagos`): daily key `2026-11-08`, weekly key `2026-W45`, all-time key `all`.
 
+## The two games
+
+| Mode | Gameplay | Score |
+|---|---|---|
+| `catcher`: Promise Catcher | Drag a basket to catch dividends (naira, rice, bread, light, books) thrown by the politician; dodge empty promises, fuel prices and tax bills (each costs a heart). Endless, speeds up. | Points per item × combo (up to x3), golden ballot +50 |
+| `whack`: Whack-a-Politician | 45s round. Tap politicians popping up from 9 podiums; don't tap citizens (costs a heart); ⏱️ adds 5s. | 10 per politician (50 golden) × combo |
+
+Coins for a run = `score × coin upgrade × character bonus × Today's Wahala modifier`, computed on the client and sent through `/progress/sync`. Run scores also fill the selected politician's wahala meter; a meltdown levels the player up to the next cast member.
+
+After changing `database/data/characters.json`, re-run `php artisan db:seed`: online clients load the roster from the database.
+
 ## Roadmap hooks
 
-- **Real-time multiplayer duels**: Laravel Reverb channel `duel.{id}`. The client's `api.duelOpponent()` is the integration point.
 - **Daily challenges from the server**: the client currently generates them from a date seed (`dailyChallenges()` in `progression.ts`).
 - **Filament admin panel** on top of the admin endpoints above.
+- **Real-time leaderboard pushes**: broadcast from `LeaderboardService::addScore()` over Laravel Reverb.

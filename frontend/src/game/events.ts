@@ -1,42 +1,39 @@
 /**
- * "Economy Wahala" events. Every minute or two the economy hits your pocket:
- * petrol price jumps, new taxes, NEPA tariffs. You get a few seconds to
- * PROTEST (tap fast) and block it. Fail, and you pay.
- * Some events are lucky ones (palliatives): tap to collect, no penalty.
- *
- * Events are framed as generic economic policy satire, not as any named
+ * "Today's Wahala": a random economy modifier that sometimes hits a run.
+ * Harder runs pay more. Framed as generic economic satire, not as any named
  * cast member personally stealing.
  */
-export type EventKind = 'drain' | 'nerf' | 'energy' | 'bonus'
-
-export interface EconomyEvent {
+export interface Modifier {
   id: string
+  icon: string
   title: string
   body: string
-  icon: string
-  kind: EventKind
-  /** drain: share of coins lost · nerf: earnings multiplier · energy: share drained · bonus: coins per level */
-  amount: number
-  durationMs?: number
+  /** coin multiplier for the run */
+  reward: number
+  /** items fall / politicians hide faster */
+  speed: number
+  /** more bad items (catcher) / more citizens (whack) */
+  bad: number
+  /** more good & golden stuff */
+  good: number
+  /** screen goes dark (NEPA) */
+  dark: boolean
 }
 
-export const EVENTS: EconomyEvent[] = [
-  { id: 'petrol', icon: '⛽', kind: 'nerf', amount: 0.5, durationMs: 45_000, title: 'Petrol price don jump!', body: 'Tap earnings -50% for 45s' },
-  { id: 'naira', icon: '📉', kind: 'nerf', amount: 0.65, durationMs: 60_000, title: 'Naira don fall again!', body: 'Tap earnings -35% for 60s' },
-  { id: 'tax', icon: '🧾', kind: 'drain', amount: 0.1, title: 'New tax on tapping!', body: 'Lose 10% of your coins' },
-  { id: 'bank', icon: '🏦', kind: 'drain', amount: 0.05, title: 'Bank SMS charges!', body: 'Lose 5% of your coins' },
-  { id: 'toll', icon: '🚧', kind: 'drain', amount: 0.08, title: 'Agbero toll gate!', body: 'Lose 8% of your coins' },
-  { id: 'nepa', icon: '💡', kind: 'energy', amount: 0.5, title: 'NEPA tariff hike!', body: 'Lose 50% of your energy' },
-  { id: 'palliative', icon: '🎁', kind: 'bonus', amount: 400, title: 'Palliative dey share!', body: 'Tap fast to collect before e finish' },
+export const MODIFIERS: Modifier[] = [
+  { id: 'petrol', icon: '⛽', title: 'Petrol price don jump!', body: 'Everything moves 25% faster', reward: 1.5, speed: 1.25, bad: 1, good: 1, dark: false },
+  { id: 'naira', icon: '📉', title: 'Naira don fall again!', body: 'More bad items and citizens in the way', reward: 1.4, speed: 1, bad: 1.5, good: 1, dark: false },
+  { id: 'nepa', icon: '💡', title: 'NEPA don take light!', body: 'Play in the dark', reward: 1.6, speed: 1, bad: 1, good: 1, dark: true },
+  { id: 'tax', icon: '🧾', title: 'Tax season!', body: 'Faster AND more bad items', reward: 2, speed: 1.15, bad: 1.3, good: 1, dark: false },
+  { id: 'palliative', icon: '🎁', title: 'Palliative season!', body: 'More good & golden items (no bonus)', reward: 1, speed: 1, bad: 0.7, good: 1.6, dark: false },
 ]
 
-export const PROTEST_WINDOW_MS = 8_000
-export const protestTarget = (level: number) => 30 + Math.min(40, level * 2)
-export const protestReward = (level: number) => 300 * level
-export const nextEventDelay = () => 60_000 + Math.random() * 60_000
+export const NO_MODIFIER: Modifier = { id: 'none', icon: '☀️', title: 'Normal day', body: '', reward: 1, speed: 1, bad: 1, good: 1, dark: false }
 
-export function pickEvent(): EconomyEvent {
-  // palliatives are rarer than bad news 😅
-  const pool = Math.random() < 0.15 ? EVENTS.filter((e) => e.kind === 'bonus') : EVENTS.filter((e) => e.kind !== 'bonus')
-  return pool[Math.floor(Math.random() * pool.length)]
+/** ~40% of runs get a modifier. */
+export function rollModifier(): Modifier {
+  if (Math.random() > 0.4) return NO_MODIFIER
+  return MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)]
 }
+
+export const getModifier = (id: string | null) => MODIFIERS.find((m) => m.id === id) ?? NO_MODIFIER

@@ -181,10 +181,9 @@ export function Hud() {
 }
 
 const NAV: { id: Screen; label: string; icon: string }[] = [
-  { id: 'shop', label: 'Boost', icon: 'shop' },
+  { id: 'shop', label: 'Shop', icon: 'shop' },
+  { id: 'play', label: 'Play', icon: 'battle' },
   { id: 'characters', label: 'Cast', icon: 'people' },
-  { id: 'tap', label: 'Tap', icon: 'tap' },
-  { id: 'battle', label: 'Battle', icon: 'battle' },
   { id: 'ranks', label: 'Ranks', icon: 'trophy' },
 ]
 
@@ -193,10 +192,10 @@ export function BottomNav() {
   const setScreen = useUi((s) => s.setScreen)
   const unread = useUnreadAlerts()
   return (
-    <nav className="relative z-20 mx-3 mb-[max(env(safe-area-inset-bottom),10px)] grid grid-cols-5 gap-1 rounded-[24px] border-[3px] border-[#042016] bg-[#06301f]/95 p-1.5 shadow-[0_-4px_24px_rgba(0,0,0,.4)]">
+    <nav className="relative z-20 mx-3 mb-[max(env(safe-area-inset-bottom),10px)] grid grid-cols-4 gap-1 rounded-[24px] border-[3px] border-[#042016] bg-[#06301f]/95 p-1.5 shadow-[0_-4px_24px_rgba(0,0,0,.4)]">
       {NAV.map((n) => {
         const active = n.id === screen
-        const center = n.id === 'tap'
+        const center = n.id === 'play'
         return (
           <button
             key={n.id}

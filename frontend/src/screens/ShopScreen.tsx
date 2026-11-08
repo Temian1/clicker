@@ -2,8 +2,7 @@ import { motion } from 'motion/react'
 import { Icon } from '../components/Icon'
 import { CoinAmount, GameButton, SectionTitle } from '../components/ui'
 import { sfx } from '../game/audio'
-import { fmt } from '../game/format'
-import { UPGRADES, autoFor, tapPowerFor, upgradeCost } from '../game/progression'
+import { UPGRADES, coinMultFor, livesFor, upgradeCost } from '../game/progression'
 import { useGame } from '../game/store'
 import { useUi } from '../game/ui'
 
@@ -18,8 +17,8 @@ export default function ShopScreen() {
       <SectionTitle icon="shop">Campaign Shop</SectionTitle>
 
       <div className="mb-4 grid grid-cols-2 gap-2">
-        <Stat icon="mic" label="Per tap" value={`+${fmt(tapPowerFor(upgrades.tapPower))}`} />
-        <Stat icon="robot" label="Hype Man" value={`${fmt(autoFor(upgrades.autoTap))}/s`} />
+        <Stat icon="mic" label="Coin bonus" value={`x${coinMultFor(upgrades.coinValue).toFixed(2)}`} />
+        <Stat icon="star" label="Hearts" value={`${livesFor(upgrades.lives)}`} />
       </div>
 
       <div className="flex flex-col gap-2.5">
@@ -67,7 +66,7 @@ export default function ShopScreen() {
         })}
       </div>
 
-      <p className="mt-4 text-center text-xs font-semibold text-white/50">Tip: Hype Man keeps earning while you are away (up to 3 hours).</p>
+      <p className="mt-4 text-center text-xs font-semibold text-white/50">Upgrades are expensive on purpose: play runs, finish daily challenges and level up politicians to afford them.</p>
     </div>
   )
 }

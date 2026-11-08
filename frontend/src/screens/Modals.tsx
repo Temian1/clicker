@@ -161,11 +161,11 @@ function ProfileSheet() {
   const unlocked = Object.values(s.chars).filter((c) => c.unlocked).length
   const stats: [string, string, string][] = [
     ['coin', 'Total earned', fmt(s.totalEarned)],
-    ['tap', 'Total taps', fmt(s.totalTaps)],
+    ['battle', 'Games played', fmt(s.totalRuns)],
     ['fire', 'Best combo', fmt(s.best.combo)],
-    ['bag', 'Biggest jackpot', fmt(s.best.jackpot)],
-    ['podium', 'Best boss', `${s.best.boss} taps`],
-    ['battle', 'Best duel', `${s.best.duel} taps`],
+    ['bag', 'Best Catcher', fmt(s.best.catcher)],
+    ['podium', 'Best Whack', fmt(s.best.whack)],
+    ['trophy', 'Level', `${s.level}`],
     ['star', 'Meltdowns', fmt(s.best.meltdowns)],
     ['people', 'Characters', `${unlocked}`],
   ]
@@ -306,7 +306,7 @@ function ShareSheet() {
   const svgRef = useRef<SVGSVGElement>(null)
   const [busy, setBusy] = useState(false)
   const toast = useUi((st) => st.toast)
-  const text = `I don tap ${def.name} reach "${STAGES[stage].name}" 😂🇳🇬 Term ${cp.term}, ${fmt(s.totalEarned)} coins! Can you beat me? Play Tap The Politician: ${location.origin}`
+  const text = `I don push ${def.name} reach "${STAGES[stage].name}" 😂🇳🇬 Level ${s.level} · Promise Catcher ${fmt(s.best.catcher)} · Whack ${fmt(s.best.whack)}. Can you beat me? Play Tap The Politician: ${location.origin}`
 
   async function makeCard(): Promise<Blob> {
     const W = 1080
@@ -369,7 +369,7 @@ function ShareSheet() {
     }
 
     title(def.name, 1110, 64, '#ffffff')
-    title(`TERM ${cp.term}  •  ${fmt(s.totalEarned)} COINS  •  COMBO ${s.best.combo}`, 1190, 46, '#ffc93c')
+    title(`LEVEL ${s.level}  •  CATCHER ${fmt(s.best.catcher)}  •  WHACK ${fmt(s.best.whack)}`, 1190, 46, '#ffc93c')
     title('Can you beat my wahala?', 1280, 44, '#7dffb8')
     return await new Promise((res) => c.toBlob((b) => res(b!), 'image/png'))
   }
@@ -427,8 +427,8 @@ function ShareSheet() {
 
 const FAQ = [
   ['Are these real politicians?', 'The names and cartoon likenesses depict Nigerian public figures. Dialogue, promises and reactions are invented for comedy, not real quotes or claims. No endorsement, real-world rankings or approval scores.'],
-  ['Does the game end?', 'Never. Each meltdown re-elects the politician into a new, harder term, and new characters join regularly.'],
-  ['Why can I not tap?', 'Your energy (generator) is empty. Wait for it to refill, upgrade Solar Panel, or use a Full Tank boost.'],
+  ['Does the game end?', 'Never. Each meltdown levels you up to the next politician; after the whole cast they return one term harder.'],
+  ['How do I earn coins faster?', 'Build long combos, catch golden items, accept runs with Today’s Wahala (bonus coins), and finish daily challenges.'],
   ['Is my progress saved?', 'Yes, on this device. Online accounts and cross-device sync are coming with the Laravel backend.'],
   ['Who passed me?', 'Check Alerts (bell icon) or the Ranks tab. You get a pop-up whenever someone overtakes you.'],
 ]
@@ -490,14 +490,14 @@ function SupportSheet() {
 
 function HowToSheet() {
   const rows: [string, string, string][] = [
-    ['tap', 'Tap the politician', 'Every tap earns coins and builds Wahala. Use many fingers at once!'],
-    ['star', '6 transformation stages', 'Fresh Agbada → Who Touch Me → Sweating → Abeg Na Wetin I Do → Tears → Wahala Don Land.'],
-    ['fire', 'Combos', 'Tap fast to stack a combo multiplier. Stop for a moment and it resets.'],
-    ['bag', 'Jackpots', 'The Ghana-Must-Go upgrade gives a chance for x10 taps.'],
-    ['bolt', 'Energy', 'Each tap uses 1 energy. It refills over time. Boosts refill it instantly.'],
-    ['robot', 'Hype Man', 'Earns coins automatically, even when you close the game (up to 3 hours).'],
-    ['podium', 'Rally Boss', 'Fill the comedy meter before the timer runs out. Bosses get harder forever.'],
-    ['trophy', 'Leaderboard', 'Daily, weekly and all-time. You get alerted the moment someone passes you.'],
+    ['bag', 'Promise Catcher', 'Drag the basket. Catch naira, rice, bread, light and books. Dodge empty promises, fuel prices and tax bills: each one costs a heart.'],
+    ['podium', 'Whack-a-Politician', 'Tap politicians as they pop up to VOTE THEM OUT. Never tap a citizen: it costs a heart. Grab the ⏱️ for +5 seconds.'],
+    ['fire', 'Combos', 'Hits in a row raise your multiplier up to x3. A miss or an escape resets it.'],
+    ['crown', 'Golden stuff', 'Golden ballots and golden politicians are worth x5. The Golden Ballot upgrade makes them appear more.'],
+    ['star', 'Wahala & levels', 'Your score fills the politician’s wahala meter through 6 poses. At the meltdown you LEVEL UP and the next politician steps up.'],
+    ['bolt', "Today's Wahala", 'Some runs get an economy twist (petrol hike, NEPA blackout, tax season). Harder runs pay more coins.'],
+    ['shop', 'Shop', 'Spend coins on a wider basket, magnet, extra hearts, coin bonus and more. Prices climb fast!'],
+    ['trophy', 'Leaderboard', 'Coins and best scores, daily, weekly and all-time. You get alerted the moment someone passes you.'],
   ]
   return (
     <div className="flex flex-col gap-2">

@@ -29,6 +29,11 @@ export function snapshot(): PlayerSnapshot {
     name: s.profile?.name ?? 'You',
     avatar: s.profile?.avatar ?? '😎',
     scores: { daily: Math.floor(s.period.daily), weekly: Math.floor(s.period.weekly), all: Math.floor(s.totalEarned) },
+    bests: {
+      catcher: { daily: s.period.catcher.daily, weekly: s.period.catcher.weekly, all: s.best.catcher },
+      whack: { daily: s.period.whack.daily, weekly: s.period.whack.weekly, all: s.best.whack },
+    },
+    runs: [],
     rate: lastRate,
     pending: s.pendingSync,
     characterId: s.selected,
@@ -49,12 +54,15 @@ export function startSync(intervalMs = 4000) {
     if (busy || document.hidden) return
     busy = true
     let pending = { coins: 0, taps: 0 }
+    let runs: PlayerSnapshot['runs'] = []
     try {
       lastRate = recentRate()
       useGame.getState().ensureDay()
       pending = useGame.getState().takePendingSync()
-      const res = await api.heartbeat({ ...snapshot(), pending })
+      runs = useGame.getState().takePendingRuns()
+      const res = await api.heartbeat({ ...snapshot(), pending, runs })
       pending = { coins: 0, taps: 0 }
+      runs = []
 
       if (res.overtakenBy.length) {
         useAlerts.getState().push(res.overtakenBy)
@@ -67,7 +75,7 @@ export function startSync(intervalMs = 4000) {
             kind: 'alert',
             icon: first.byAvatar,
             title: `${first.byName} just passed you!`,
-            body: `You're now #${first.newRank} on ${PERIOD_LABEL[first.period]}${more > 0 ? ` (+${more} more)` : ''}. Tap back!`,
+            body: `You're now #${first.newRank} on ${PERIOD_LABEL[first.period]}${more > 0 ? ` (+${more} more)` : ''}. Play to win it back!`,
           })
           sfx.alert()
           if (useGame.getState().settings.haptics) vibrate([60, 40, 60])
@@ -85,7 +93,10 @@ export function startSync(intervalMs = 4000) {
       }
     } catch (e) {
       // put the unsent delta back so it goes with the next heartbeat
-      useGame.setState((st) => ({ pendingSync: { coins: st.pendingSync.coins + pending.coins, taps: st.pendingSync.taps + pending.taps } }))
+      useGame.setState((st) => ({
+        pendingSync: { coins: st.pendingSync.coins + pending.coins, taps: st.pendingSync.taps + pending.taps },
+        pendingRuns: [...runs, ...st.pendingRuns].slice(-20),
+      }))
       console.warn('[sync] heartbeat failed', e)
     } finally {
       busy = false

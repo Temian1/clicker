@@ -6,8 +6,14 @@ import { Coin, SectionTitle } from '../components/ui'
 import { fmt } from '../game/format'
 import { useGame } from '../game/store'
 import { snapshot } from '../game/sync'
-import type { Period } from '../game/types'
+import type { Board, Period } from '../game/types'
 import { useAlerts } from '../game/ui'
+
+const BOARDS: { id: Board; label: string; icon: string }[] = [
+  { id: 'coins', label: 'Coins', icon: 'coin' },
+  { id: 'catcher', label: 'Catcher', icon: 'bag' },
+  { id: 'whack', label: 'Whack', icon: 'podium' },
+]
 
 const TABS: { id: Period; label: string }[] = [
   { id: 'daily', label: 'Daily' },
@@ -16,10 +22,12 @@ const TABS: { id: Period; label: string }[] = [
 ]
 
 export default function RanksScreen() {
+  const [board, setBoard] = useState<Board>('coins')
   const [period, setPeriod] = useState<Period>('daily')
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const best = useGame((s) => s.best)
-  const totalTaps = useGame((s) => s.totalTaps)
+  const totalRuns = useGame((s) => s.totalRuns)
+  const level = useGame((s) => s.level)
   const alerts = useAlerts((s) => s.alerts)
   const markAllRead = useAlerts((s) => s.markAllRead)
 
@@ -31,7 +39,7 @@ export default function RanksScreen() {
     let alive = true
     const load = () =>
       api
-        .leaderboard(period, snapshot())
+        .leaderboard(board, period, snapshot())
         .then((d) => alive && setData(d))
         .catch(() => alive && setData(null))
     void load()
@@ -40,7 +48,7 @@ export default function RanksScreen() {
       alive = false
       window.clearInterval(t)
     }
-  }, [period])
+  }, [board, period])
 
   return (
     <div className="flex h-full flex-col px-3">
@@ -50,12 +58,23 @@ export default function RanksScreen() {
 
       {/* personal highscores */}
       <div className="mb-3 grid grid-cols-4 gap-1.5">
-        <HS icon="tap" label="Taps" v={fmt(totalTaps)} />
+        <HS icon="bag" label="Catcher" v={fmt(best.catcher)} />
+        <HS icon="podium" label="Whack" v={fmt(best.whack)} />
         <HS icon="fire" label="Combo" v={fmt(best.combo)} />
-        <HS icon="podium" label="Boss" v={fmt(best.boss)} />
-        <HS icon="bag" label="Jackpot" v={fmt(best.jackpot)} />
+        <HS icon="trophy" label={`Lvl · ${totalRuns} runs`} v={`${level}`} />
       </div>
 
+      <div className="mb-2 grid grid-cols-3 gap-1.5">
+        {BOARDS.map((b) => (
+          <button
+            key={b.id}
+            onClick={() => setBoard(b.id)}
+            className={`font-display flex items-center justify-center gap-1 rounded-xl border-2 py-1.5 text-base ${board === b.id ? 'border-[#ffc93c] bg-[#ffc93c]/20' : 'border-[#042016] bg-black/30 text-white/70'}`}
+          >
+            <Icon name={b.icon} size={18} /> {b.label}
+          </button>
+        ))}
+      </div>
       <div className="mb-3 grid grid-cols-3 gap-1 rounded-2xl border-[3px] border-[#042016] bg-black/30 p-1">
         {TABS.map((t) => (
           <button
@@ -75,7 +94,7 @@ export default function RanksScreen() {
           <AnimatePresence initial={false}>
             {data?.entries.slice(3).map((e) => (
               <motion.div key={e.id} layout transition={{ type: 'spring', stiffness: 500, damping: 40 }}>
-                <Row e={e} />
+                <Row e={e} coins={board === 'coins'} />
               </motion.div>
             ))}
           </AnimatePresence>
@@ -101,7 +120,7 @@ export default function RanksScreen() {
       {/* sticky "me" row — always visible */}
       {data && (
         <div className="mb-2">
-          <Row e={data.me} />
+          <Row e={data.me} coins={board === 'coins'} />
         </div>
       )}
     </div>
@@ -118,14 +137,14 @@ function HS({ icon, label, v }: { icon: string; label: string; v: string }) {
   )
 }
 
-function Row({ e }: { e: LeaderboardResponse['me'] }) {
+function Row({ e, coins }: { e: LeaderboardResponse['me']; coins: boolean }) {
   return (
     <div className={`flex items-center gap-2 rounded-2xl border-2 px-3 py-2 ${e.isMe ? 'border-[#ffc93c] bg-[#ffc93c]/20' : 'border-[#042016] bg-black/30'}`}>
       <span className="font-display w-9 text-center text-lg text-white/80">#{e.rank}</span>
       <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-[#042016] bg-[#0b4a31] text-lg">{e.avatar}</span>
       <span className="flex-1 truncate font-extrabold">{e.isMe ? `${e.name} (You)` : e.name}</span>
       <span className="font-display flex items-center gap-1 tabular-nums">
-        <Coin size={16} />
+        {coins ? <Coin size={16} /> : <span className="text-xs text-white/50">pts</span>}
         {fmt(e.score)}
       </span>
     </div>
