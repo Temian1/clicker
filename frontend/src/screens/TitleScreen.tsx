@@ -4,6 +4,7 @@ import { Icon } from '../components/Icon'
 import { Politician } from '../components/Politician'
 import { GameButton } from '../components/ui'
 import { CHARACTERS } from '../game/characters'
+import { GAME_TAGLINE } from '../game/assets'
 import { useGame } from '../game/store'
 import { AVATARS } from './Modals'
 
@@ -39,11 +40,11 @@ export default function TitleScreen({ onPlay }: { onPlay: () => void }) {
           <span className="h-4 w-5 bg-[#00a859]" />
         </div>
         <h1 className="font-display text-outline text-[56px] leading-[0.9] text-[#ffc93c]">
-          TAP THE
+          RALLY
           <br />
-          <span className="text-white">POLITICIAN</span>
+          <span className="text-white">WAHALA</span>
         </h1>
-        <p className="font-display text-outline-sm mt-2 text-lg text-[#7dffb8]">Abeg, na wetin I do? 😂</p>
+        <p className="font-display text-outline-sm mt-2 text-lg text-[#7dffb8]">{GAME_TAGLINE}</p>
       </motion.div>
 
       <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 2.4 }} className="relative h-[38vh] w-full max-w-[300px]">
@@ -65,7 +66,7 @@ export default function TitleScreen({ onPlay }: { onPlay: () => void }) {
               value={name}
               maxLength={18}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Oga Tapper"
+              placeholder="e.g. Oga Voter"
               className="w-full rounded-2xl border-[3px] border-[#042016] bg-black/40 px-3 py-2.5 font-bold outline-none focus:border-[#ffc93c]"
             />
           </div>
@@ -78,7 +79,7 @@ export default function TitleScreen({ onPlay }: { onPlay: () => void }) {
           tone="gold"
           className="shine w-full py-4 text-3xl"
           onClick={() => {
-            if (isNew) setProfile(name || 'Oga Tapper', avatar)
+            if (isNew) setProfile(name || 'Oga Voter', avatar)
             onPlay()
           }}
         >

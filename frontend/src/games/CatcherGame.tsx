@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { Countdown, GameOver, Hearts, PreRun } from '../components/RunUI'
+import { ASSETS, getAsset, type AssetKey } from '../game/assets'
 import { sfx } from '../game/audio'
 import { getCharacter, randomLine } from '../game/characters'
 import { rollModifier, type Modifier } from '../game/events'
@@ -10,17 +11,17 @@ import { basketWidthFor, calmFor, comboMult, livesFor, luckFor, magnetFor, stage
 import { useGame, type RunOutcome } from '../game/store'
 
 /**
- * PROMISE CATCHER
- * The politician paces the rally stage throwing things at the crowd.
- * Drag the basket to catch real "dividends" (naira, rice, bread, light, books),
- * dodge empty promises, fuel-price tags and tax bills. It keeps speeding up.
- * Every good catch builds wahala, so the politician panics through their poses
- * live during the run.
+ * PROMISE CATCHER: "Na receipts we dey collect!"
+ * At the rally the politician throws out PROMISES (light, roads, schools,
+ * hospitals, jobs). Catch them in your receipt bag to HOLD THEM TO THEIR WORD:
+ * every promise you collect is one they now have to deliver, which is why they
+ * panic more and more. They also throw EXCUSES and HARDSHIP (fuel hike, new
+ * tax, "e no dey budget"); catch those and they hurt you.
  */
 
 type Kind = 'good' | 'gold' | 'bad' | 'power'
 interface ItemDef {
-  emoji: string
+  asset: AssetKey
   kind: Kind
   points: number
   label?: string
@@ -28,24 +29,24 @@ interface ItemDef {
 }
 
 const GOOD: ItemDef[] = [
-  { emoji: '💵', kind: 'good', points: 10 },
-  { emoji: '🍚', kind: 'good', points: 15 },
-  { emoji: '🍞', kind: 'good', points: 10 },
-  { emoji: '💡', kind: 'good', points: 20 },
-  { emoji: '📚', kind: 'good', points: 15 },
+  { asset: 'promise-light', kind: 'good', points: 20, label: 'LIGHT' },
+  { asset: 'promise-roads', kind: 'good', points: 15, label: 'ROADS' },
+  { asset: 'promise-schools', kind: 'good', points: 15, label: 'SCHOOLS' },
+  { asset: 'promise-hospital', kind: 'good', points: 15, label: 'HOSPITAL' },
+  { asset: 'promise-jobs', kind: 'good', points: 10, label: 'JOBS' },
 ]
-const GOLD: ItemDef = { emoji: '🗳️', kind: 'gold', points: 50 }
+const GOLD: ItemDef = { asset: 'promise-manifesto', kind: 'gold', points: 50, label: 'SIGNED!' }
 const BAD: ItemDef[] = [
-  { emoji: '💬', kind: 'bad', points: 0, label: 'I go fix am!' },
-  { emoji: '⛽', kind: 'bad', points: 0, label: '₦₦₦' },
-  { emoji: '🧾', kind: 'bad', points: 0, label: 'TAX' },
+  { asset: 'bad-fuel', kind: 'bad', points: 0, label: 'FUEL HIKE' },
+  { asset: 'bad-tax', kind: 'bad', points: 0, label: 'NEW TAX' },
+  { asset: 'bad-excuse', kind: 'bad', points: 0, label: 'E NO DEY BUDGET' },
 ]
 const POWERS: ItemDef[] = [
-  { emoji: '🧲', kind: 'power', points: 0, power: 'magnet' },
-  { emoji: '⭐', kind: 'power', points: 0, power: 'double' },
-  { emoji: '🛡️', kind: 'power', points: 0, power: 'shield' },
-  { emoji: '🐢', kind: 'power', points: 0, power: 'slow' },
-  { emoji: '❤️', kind: 'power', points: 0, power: 'heart' },
+  { asset: 'power-megaphone', kind: 'power', points: 0, power: 'magnet' },
+  { asset: 'power-double', kind: 'power', points: 0, power: 'double' },
+  { asset: 'power-shield', kind: 'power', points: 0, power: 'shield' },
+  { asset: 'power-slow', kind: 'power', points: 0, power: 'slow' },
+  { asset: 'power-heart', kind: 'power', points: 0, power: 'heart' },
 ]
 
 interface Item {
@@ -75,10 +76,10 @@ interface Spark {
 }
 
 const RULES: [string, string][] = [
-  ['👆', 'Drag left/right to move the basket'],
-  ['💵', 'Catch dividends: naira, rice, bread, light, books'],
-  ['💬', 'Dodge empty promises, fuel prices & tax: they cost a heart'],
-  ['🗳️', 'Golden ballot = +50 · power-ups: 🧲 ⭐ 🛡️ 🐢 ❤️'],
+  ['👆', 'Drag left/right to move your receipt bag'],
+  ['💡', 'Catch their PROMISES (light, roads, schools, jobs) to hold them to it'],
+  ['⛽', 'Dodge EXCUSES & hardship (fuel hike, new tax): each costs a heart'],
+  ['📜', 'Signed manifesto = +50 · power-ups: megaphone, x2, shield, slow-mo, heart'],
 ]
 
 export default function CatcherGame({ onExit }: { onExit: () => void }) {
@@ -199,7 +200,7 @@ export default function CatcherGame({ onExit }: { onExit: () => void }) {
         g.combo = 0
         g.shake = 0.35
         g.flash = 0.25
-        g.floaters.push({ x: it.x, y: it.y, text: d.label ?? 'OUCH', color: '#ff4d4d', life: 1 })
+        g.floaters.push({ x: it.x, y: it.y, text: `${d.label ?? 'OUCH'}!`, color: '#ff4d4d', life: 1 })
         sfx.error()
         if (haptics) vibrate([40, 30, 40])
         if (g.hearts <= 0) g.over = true
@@ -211,7 +212,7 @@ export default function CatcherGame({ onExit }: { onExit: () => void }) {
         if (d.power === 'slow') g.slow = 6
         if (d.power === 'shield') g.shield = true
         if (d.power === 'heart') g.hearts = Math.min(maxHearts, g.hearts + 1)
-        g.floaters.push({ x: it.x, y: it.y, text: { magnet: 'MAGNET!', double: 'x2!', slow: 'SLOW-MO!', shield: 'SHIELD!', heart: '+1 ❤️' }[d.power!], color: '#7dffb8', life: 1.1 })
+        g.floaters.push({ x: it.x, y: it.y, text: { magnet: 'MEGAPHONE!', double: 'x2!', slow: 'SLOW-MO!', shield: 'SHIELD!', heart: '+1 ❤️' }[d.power!], color: '#7dffb8', life: 1.1 })
         sfx.buy()
         burst(it.x, it.y, '#7dffb8')
         return
@@ -221,7 +222,7 @@ export default function CatcherGame({ onExit }: { onExit: () => void }) {
       g.maxCombo = Math.max(g.maxCombo, g.combo)
       const pts = Math.round(d.points * comboMult(g.combo) * (g.double > 0 ? 2 : 1))
       g.score += pts
-      g.floaters.push({ x: it.x, y: it.y, text: `+${pts}`, color: d.kind === 'gold' ? '#ffc93c' : '#ffffff', life: 0.9 })
+      g.floaters.push({ x: it.x, y: it.y, text: `+${pts} ${d.label}`, color: d.kind === 'gold' ? '#ffc93c' : '#ffffff', life: 0.9 })
       burst(it.x, it.y, d.kind === 'gold' ? '#ffc93c' : '#7dffb8', d.kind === 'gold' ? 22 : 8)
       if (d.kind === 'gold') sfx.crit()
       else sfx.tap(g.combo)
@@ -343,29 +344,49 @@ export default function CatcherGame({ onExit }: { onExit: () => void }) {
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       for (const it of g.items) {
+        const img = getAsset(it.def.asset)
         ctx.save()
         ctx.translate(it.x, it.y)
         if (it.def.kind === 'gold') {
           ctx.shadowColor = '#ffc93c'
           ctx.shadowBlur = 18
         }
-        if (it.def.kind === 'bad') {
-          ctx.fillStyle = 'rgba(255,77,77,0.35)'
-          ctx.beginPath()
-          ctx.arc(0, 0, it.r + 4, 0, Math.PI * 2)
-          ctx.fill()
+        if (!img) {
+          // emoji fallback: promises sit in a white speech bubble, bad stuff in a red ring
+          if (it.def.kind === 'good' || it.def.kind === 'gold') {
+            ctx.fillStyle = it.def.kind === 'gold' ? '#fff3c4' : '#ffffff'
+            ctx.strokeStyle = '#042016'
+            ctx.lineWidth = 3
+            ctx.beginPath()
+            ctx.arc(0, 0, it.r + 5, 0, Math.PI * 2)
+            ctx.moveTo(-6, it.r + 2)
+            ctx.lineTo(-12, it.r + 12)
+            ctx.lineTo(4, it.r + 3)
+            ctx.fill()
+            ctx.stroke()
+          } else if (it.def.kind === 'bad') {
+            ctx.fillStyle = 'rgba(255,77,77,0.4)'
+            ctx.beginPath()
+            ctx.arc(0, 0, it.r + 5, 0, Math.PI * 2)
+            ctx.fill()
+          }
         }
-        ctx.rotate(it.rot)
-        ctx.font = `${it.r * 1.7}px system-ui, "Apple Color Emoji", "Segoe UI Emoji"`
-        ctx.fillText(it.def.emoji, 0, 2)
+        ctx.rotate(it.def.kind === 'good' || it.def.kind === 'gold' ? Math.sin(it.rot) * 0.25 : it.rot)
+        if (img) {
+          const sz = it.r * 2.6
+          ctx.drawImage(img, -sz / 2, -sz / 2, sz, sz)
+        } else {
+          ctx.font = `${it.r * 1.5}px system-ui, "Apple Color Emoji", "Segoe UI Emoji"`
+          ctx.fillText(ASSETS[it.def.asset], 0, 2)
+        }
         ctx.restore()
         if (it.def.label) {
           ctx.font = '900 11px Nunito, sans-serif'
-          ctx.fillStyle = '#fff'
+          ctx.fillStyle = it.def.kind === 'bad' ? '#ffb3b3' : it.def.kind === 'gold' ? '#ffe082' : '#b9ffd9'
           ctx.strokeStyle = '#042016'
           ctx.lineWidth = 3
-          ctx.strokeText(it.def.label, it.x, it.y + it.r + 9)
-          ctx.fillText(it.def.label, it.x, it.y + it.r + 9)
+          ctx.strokeText(it.def.label, it.x, it.y + it.r + 16)
+          ctx.fillText(it.def.label, it.x, it.y + it.r + 16)
         }
       }
 
@@ -379,6 +400,11 @@ export default function CatcherGame({ onExit }: { onExit: () => void }) {
         ctx.ellipse(g.bx, y0, w / 2 + (magnetFor(up.magnet) + (g.magnet > 0 ? 160 : 0)) * 0.5, 30, 0, 0, Math.PI * 2)
         ctx.fill()
       }
+      const bag = getAsset('receipt-bag')
+      if (bag) {
+        const bh = w * (bag.naturalHeight / bag.naturalWidth)
+        ctx.drawImage(bag, x0, y0 - bh * 0.25, w, bh)
+      } else {
       ctx.fillStyle = '#2f6fd6'
       ctx.strokeStyle = '#042016'
       ctx.lineWidth = 4
@@ -412,6 +438,7 @@ export default function CatcherGame({ onExit }: { onExit: () => void }) {
       ctx.fillStyle = '#ffc93c'
       ctx.fillRect(x0 - 4, y0 - 6, w + 8, 8)
       ctx.strokeRect(x0 - 4, y0 - 6, w + 8, 8)
+      }
       if (g.shield) {
         ctx.strokeStyle = '#3ec7ff'
         ctx.lineWidth = 3

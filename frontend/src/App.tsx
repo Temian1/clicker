@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { api } from './api'
 import { BottomNav, Hud, Toasts } from './components/ui'
+import { preloadAssets } from './game/assets'
 import { setAudioPrefs, sfx, unlockAudio } from './game/audio'
 import { registerCharacters } from './game/characters'
 import { useGame } from './game/store'
@@ -26,6 +27,7 @@ export default function App() {
   const settings = useGame((s) => s.settings)
 
   useEffect(() => setAudioPrefs(settings), [settings])
+  useEffect(() => preloadAssets(), [])
 
   // backend heartbeat (leaderboard sync, run uploads, overtake alerts)
   useEffect(() => {

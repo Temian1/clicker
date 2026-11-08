@@ -34,7 +34,7 @@ export default function PlayScreen() {
   }, [bubble])
 
   const games: { mode: GameMode; title: string; sub: string; icon: string; tone: 'gold' | 'red'; color: string }[] = [
-    { mode: 'catcher', title: 'Promise Catcher', sub: 'Catch the dividends, dodge the empty promises', icon: 'bag', tone: 'gold', color: '#ffc93c' },
+    { mode: 'catcher', title: 'Promise Catcher', sub: 'Catch every promise they make. Dodge their excuses!', icon: 'bag', tone: 'gold', color: '#ffc93c' },
     { mode: 'whack', title: 'Whack-a-Politician', sub: 'Vote them out before they duck. Spare the citizens!', icon: 'podium', tone: 'red', color: '#ff4d4d' },
   ]
 

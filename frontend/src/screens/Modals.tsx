@@ -1,6 +1,7 @@
 import { motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
+import { GAME_NAME } from '../game/assets'
 import { Icon } from '../components/Icon'
 import { Politician } from '../components/Politician'
 import { CoinAmount, GameButton, ProgressBar, Sheet } from '../components/ui'
@@ -83,7 +84,7 @@ function MenuSheet() {
           <Icon name="chevron" size={18} />
         </motion.button>
       ))}
-      <p className="mt-2 text-center text-[11px] font-semibold text-white/40">Tap The Politician v1.0 · Cartoon satire. Dialogue is invented, not real quotes.</p>
+      <p className="mt-2 text-center text-[11px] font-semibold text-white/40">{GAME_NAME} v2.0 · Cartoon satire. Dialogue is invented, not real quotes.</p>
     </div>
   )
 }
@@ -306,7 +307,7 @@ function ShareSheet() {
   const svgRef = useRef<SVGSVGElement>(null)
   const [busy, setBusy] = useState(false)
   const toast = useUi((st) => st.toast)
-  const text = `I don push ${def.name} reach "${STAGES[stage].name}" 😂🇳🇬 Level ${s.level} · Promise Catcher ${fmt(s.best.catcher)} · Whack ${fmt(s.best.whack)}. Can you beat me? Play Tap The Politician: ${location.origin}`
+  const text = `I don push ${def.name} reach "${STAGES[stage].name}" 😂🇳🇬 Level ${s.level} · Promise Catcher ${fmt(s.best.catcher)} · Whack ${fmt(s.best.whack)}. Can you beat me? Play ${GAME_NAME}: ${location.origin}`
 
   async function makeCard(): Promise<Blob> {
     const W = 1080
@@ -349,7 +350,7 @@ function ShareSheet() {
       g.fillStyle = color
       g.fillText(t, W / 2, y)
     }
-    title('TAP THE POLITICIAN', 130, 96, '#ffc93c')
+    title(GAME_NAME.toUpperCase(), 130, 96, '#ffc93c')
     title(STAGES[stage].name.toUpperCase(), 220, 64, STAGES[stage].color)
 
     // draw the current pose straight from the sprite sheet (3×2 atlas)
@@ -378,13 +379,13 @@ function ShareSheet() {
     setBusy(true)
     try {
       const blob = await makeCard()
-      const file = new File([blob], 'tap-the-politician.png', { type: 'image/png' })
+      const file = new File([blob], 'rally-wahala.png', { type: 'image/png' })
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text, title: 'Tap The Politician' })
+        await navigator.share({ files: [file], text, title: GAME_NAME })
       } else {
         const a = document.createElement('a')
         a.href = URL.createObjectURL(blob)
-        a.download = 'tap-the-politician.png'
+        a.download = 'rally-wahala.png'
         a.click()
         URL.revokeObjectURL(a.href)
         toast({ kind: 'info', title: 'Screenshot saved!', body: 'Attach it on WhatsApp status.' })
@@ -399,7 +400,7 @@ function ShareSheet() {
   return (
     <div>
       <div className="panel mx-auto mb-3 w-full max-w-[280px] overflow-hidden p-3 text-center">
-        <div className="font-display text-outline-sm text-[#ffc93c]">TAP THE POLITICIAN</div>
+        <div className="font-display text-outline-sm text-[#ffc93c]">{GAME_NAME.toUpperCase()}</div>
         <div className="font-display text-sm" style={{ color: STAGES[stage].color }}>
           {STAGES[stage].name}
         </div>
@@ -490,10 +491,10 @@ function SupportSheet() {
 
 function HowToSheet() {
   const rows: [string, string, string][] = [
-    ['bag', 'Promise Catcher', 'Drag the basket. Catch naira, rice, bread, light and books. Dodge empty promises, fuel prices and tax bills: each one costs a heart.'],
-    ['podium', 'Whack-a-Politician', 'Tap politicians as they pop up to VOTE THEM OUT. Never tap a citizen: it costs a heart. Grab the ⏱️ for +5 seconds.'],
+    ['bag', 'Promise Catcher', 'The politician throws promises at the rally: light, roads, schools, hospitals, jobs. Catch them in your receipt bag to hold them to their word. Dodge their excuses and hardship (fuel hike, new tax, “e no dey budget”): each costs a heart.'],
+    ['podium', 'Whack-a-Politician', 'Bonk politicians with the toy hammer as they pop up to VOTE THEM OUT. Never bonk a citizen: it costs a heart. Grab the ⏱️ for +5 seconds.'],
     ['fire', 'Combos', 'Hits in a row raise your multiplier up to x3. A miss or an escape resets it.'],
-    ['crown', 'Golden stuff', 'Golden ballots and golden politicians are worth x5. The Golden Ballot upgrade makes them appear more.'],
+    ['crown', 'Golden stuff', 'Signed manifestos (+50) and golden politicians (x5) pay big. The Golden Ballot upgrade makes them appear more.'],
     ['star', 'Wahala & levels', 'Your score fills the politician’s wahala meter through 6 poses. At the meltdown you LEVEL UP and the next politician steps up.'],
     ['bolt', "Today's Wahala", 'Some runs get an economy twist (petrol hike, NEPA blackout, tax season). Harder runs pay more coins.'],
     ['shop', 'Shop', 'Spend coins on a wider basket, magnet, extra hearts, coin bonus and more. Prices climb fast!'],

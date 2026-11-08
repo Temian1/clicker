@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { Politician } from '../components/Politician'
 import { Countdown, GameOver, Hearts, PreRun } from '../components/RunUI'
+import { AssetIcon, type AssetKey } from '../game/assets'
 import { sfx } from '../game/audio'
 import { getCharacter, playableCharacters, randomLine } from '../game/characters'
 import { rollModifier, type Modifier } from '../game/events'
@@ -18,7 +19,7 @@ import { useGame, type RunOutcome } from '../game/store'
  */
 
 const ROUND_SECONDS = 45
-const CITIZENS = ['👩🏾‍🌾', '👨🏾‍🔧', '👩🏾‍🎓', '👨🏾‍🍳', '👵🏾', '👨🏾‍💼', '👩🏾‍⚕️']
+const CITIZENS: AssetKey[] = ['citizen-1', 'citizen-2', 'citizen-3', 'citizen-4', 'citizen-5', 'citizen-6']
 const PROMISES = ['Vote me!', 'I go fix am!', 'Free light!', 'Trust me!', '4 more years!', 'Na me be am!']
 
 type Kind = 'pol' | 'gold' | 'citizen' | 'clock'
@@ -26,7 +27,7 @@ interface Hole {
   id: number
   kind: Kind
   charId: string
-  emoji: string
+  citizen: AssetKey
   until: number
   hitAt: number | null
   promise: string
@@ -39,7 +40,7 @@ interface Pop {
 }
 
 const RULES: [string, string][] = [
-  ['👆', 'Tap politicians to VOTE THEM OUT'],
+  ['🔨', 'Bonk politicians with the toy hammer to VOTE THEM OUT'],
   ['👩🏾‍🌾', "Don't tap citizens: each one costs a heart"],
   ['🌟', 'Golden politician = x5 points · ⏱️ = +5 seconds'],
   ['🔥', 'Hit in a row for combos · escapes break your combo'],
@@ -52,6 +53,7 @@ export default function WhackGame({ onExit }: { onExit: () => void }) {
   const [modifier, setModifier] = useState<Modifier>(() => rollModifier())
   const [holes, setHoles] = useState<(Hole | null)[]>(() => Array(9).fill(null))
   const [pops, setPops] = useState<Pop[]>([])
+  const [hammers, setHammers] = useState<{ id: number; hole: number }[]>([])
   const [hud, setHud] = useState({ score: 0, hearts: 3, combo: 0, left: ROUND_SECONDS })
   const [outcome, setOutcome] = useState<RunOutcome | null>(null)
   const [shake, setShake] = useState(0)
@@ -165,7 +167,7 @@ export default function WhackGame({ onExit }: { onExit: () => void }) {
             id: ++uid,
             kind,
             charId: Math.random() < 0.5 ? sel : cast[Math.floor(Math.random() * cast.length)].id,
-            emoji: CITIZENS[Math.floor(Math.random() * CITIZENS.length)],
+            citizen: CITIZENS[Math.floor(Math.random() * CITIZENS.length)],
             until: now + (kind === 'citizen' ? showFor * 1.2 : showFor),
             hitAt: null,
             promise: PROMISES[Math.floor(Math.random() * PROMISES.length)],
@@ -200,6 +202,10 @@ export default function WhackGame({ onExit }: { onExit: () => void }) {
     hitRef.current = (i: number) => {
       if (phaseRef.current !== 'play' || G.over) return
       const h = G.holes[i]
+      // the toy hammer swings on every tap, hit or miss
+      const hid = ++uid
+      setHammers((hs) => [...hs.slice(-5), { id: hid, hole: i }])
+      window.setTimeout(() => setHammers((hs) => hs.filter((x) => x.id !== hid)), 320)
       if (!h || h.hitAt !== null) return
       const now = performance.now()
       if (h.kind === 'citizen') {
@@ -319,11 +325,11 @@ export default function WhackGame({ onExit }: { onExit: () => void }) {
                   >
                     {h.kind === 'citizen' ? (
                       <div className="mb-1 flex flex-col items-center">
-                        <span className="text-[44px] leading-none">{h.emoji}</span>
+                        <AssetIcon k={h.citizen} size={58} />
                         <span className="rounded-md border-2 border-[#042016] bg-[#3ec7ff] px-1 text-[10px] font-black text-[#042016]">CITIZEN</span>
                       </div>
                     ) : h.kind === 'clock' ? (
-                      <span className="mb-2 text-[44px] leading-none">⏱️</span>
+                      <AssetIcon k="whack-clock" size={52} className="mb-2" />
                     ) : (
                       <div className="relative h-full w-full">
                         <Politician
@@ -353,6 +359,23 @@ export default function WhackGame({ onExit }: { onExit: () => void }) {
               <rect x="3" y="1" width="94" height="9" rx="3" fill="#fff7e6" stroke="#042016" strokeWidth="4" />
               <circle cx="50" cy="30" r="9" fill="#ffc93c" stroke="#042016" strokeWidth="3" />
             </svg>
+            {/* toy hammer */}
+            <AnimatePresence>
+              {hammers
+                .filter((x) => x.hole === i)
+                .map((x) => (
+                  <motion.div
+                    key={x.id}
+                    initial={{ rotate: -70, opacity: 1 }}
+                    animate={{ rotate: 18 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.14, ease: 'easeIn' }}
+                    className="pointer-events-none absolute -top-2 -right-1 z-30 origin-bottom-right"
+                  >
+                    <AssetIcon k="whack-hammer" size={64} />
+                  </motion.div>
+                ))}
+            </AnimatePresence>
             {/* score pops */}
             {pops
               .filter((p) => p.hole === i)

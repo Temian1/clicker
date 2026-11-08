@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Tap The Politician — API  (see /backend/API.md)
+| Rally Wahala — API  (see /backend/API.md)
 |--------------------------------------------------------------------------
 */
 

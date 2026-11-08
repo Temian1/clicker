@@ -1,4 +1,4 @@
-# Tap The Politician — Laravel API
+# Rally Wahala — Laravel API
 
 Base URL: `http://localhost:8000/api` · Auth: **Sanctum bearer tokens** (`Authorization: Bearer <token>`) · All bodies JSON.
 
