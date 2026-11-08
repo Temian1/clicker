@@ -1,101 +1,34 @@
-# Character art prompts (for ChatGPT / DALL·E or any image model)
+# Character art prompts
 
-The game already ships with **code-drawn, layered SVG characters** (`frontend/src/components/Politician.tsx`). Every part (robe, cap, glasses, eyes, mouth, sweat, tears, props) animates on its own, so the game needs no images to run.
+The active cast uses cartoon likenesses and real names of 12 Nigerian political figures, as requested. All dialogue, promises and reactions are invented game comedy, not real quotes, factual claims or endorsements.
 
-Use these prompts when you want **illustrated art** for marketing, the app icon, store screenshots, or as a reference for a designer redrawing the SVG layers. Paste the **style block** first, then one character block.
+## Sprite sheet layout
 
-> **Content rule:** every character is a *fictional* caricature. Do not name, describe or resemble a real politician. Keep it slapstick: no blood, injury or violence, and no ethnic or religious mockery. The jokes target political behaviour (promises, budgets, bags), not people's cultures.
+Generate each character separately with the built-in image generation tool. Use a transparent 1536 x 1024 PNG with three columns and two rows of equal square cells. Reading order: confident, startled, sweating, complaining, cartoon tears, overwhelmed. Each cell shows the same full-body character, centred with clear padding, in bold 2D mobile game art with thick dark-brown outlines and one soft shade. No labels, grid lines, party logos, injuries or weapons.
 
----
+The frontend crops one cell at a time through the existing SVG component; a missing sheet falls back to layered SVG. Assets are saved in `frontend/public/characters/`. Exact generation prompts are saved beside them in `generation-prompts.json`.
 
-## 1. Style block (paste first, every time)
+## Current cast
 
-```
-Cartoon character design sheet for a mobile clicker game called "Tap The Politician".
-Style: bold, chunky 2D cartoon with thick dark-brown outlines (#2a1608), flat colours with one soft
-shade, big head (≈40% of height), small body, expressive eyebrows, rounded shapes, like a premium
-mobile game mascot. Plain transparent background. Full body, front view, centred, feet visible.
-Fictional character, not based on any real person. Family-friendly slapstick comedy.
-Produce ONE image showing 6 poses side by side, same character, labelled 1–6:
-1 "Fresh Agbada" – confident smile with teeth, perfectly ironed outfit, cap straight
-2 "Who Touch Me?" – surprised wide eyes, sunglasses shaking, awkward wavy smile
-3 "Sweating Small" – sweat drops, cap tilted, gritted-teeth nervous grin
-4 "Abeg, Na Wetin I Do?" – angry complaining open mouth, wrinkled outfit, sunglasses slid down nose
-5 "Cartoon Tears" – eyes squeezed shut, streams of comic tears, wailing mouth, outfit very rumpled
-6 "Wahala Don Land" – total meltdown: dizzy spiral eyes, screaming, cap flying off, steam puffs,
-  patch on the outfit, props bursting
-```
+| Name | File | Appearance prompt |
+| --- | --- | --- |
+| Bola Ahmed Tinubu | `bola-tinubu.png` | Older Yoruba man, round face, dark brown skin, round clear eyeglasses, patterned burgundy folded fila cap with cream infinity-like embroidery, cream agbada with green embroidery |
+| Oluremi Tinubu | `oluremi-tinubu.png` | Nigerian woman with medium brown skin, rounded face, warm smile, neatly groomed brows, no glasses; elegant magenta ankara gown with gold zigzag trim, large sculptural gold gele headwrap, simple bead necklace, low-heeled shoes |
+| Peter Obi | `peter-obi.png` | Nigerian man with medium dark brown skin, closely cropped black hair with receding hairline, clean shaven, distinctive dark rectangular eyeglasses, slim oval face; simple black short-sleeved traditional tunic and trousers, small silver buttons, black shoes, no cap |
+| Atiku Abubakar | `atiku-abubakar.png` | Older Nigerian man with medium brown skin, broad rounded face, grey close-cropped beard and moustache, smiling eyes, no glasses; pale blue flowing agbada with navy embroidery, navy-and-cream embroidered northern cap, dark shoes |
+| Goodluck Jonathan | `goodluck-jonathan.png` | Nigerian man with warm dark brown skin, broad oval face, characteristic black brimmed fedora hat, small neat moustache, no glasses; dark charcoal Niger Delta traditional long tunic with gold buttons and gold chain, matching trousers, black shoes |
+| Muhammadu Buhari | `muhammadu-buhari.png` | Older Nigerian man with dark brown skin, lean elongated face, high cheekbones, thin grey moustache, clear narrow rectangular glasses; white flowing babban riga kaftan with pale grey embroidery, tall cream northern embroidered cap, brown shoes |
+| Olusegun Obasanjo | `olusegun-obasanjo.png` | Older Nigerian man with deep brown skin, round broad face, mostly bald head with short grey side hair, broad nose, no facial hair, no glasses; rich blue Yoruba agbada with cream geometric embroidery, blue folded fila cap, brown shoes |
+| Kashim Shettima | `kashim-shettima.png` | Nigerian man with medium brown skin, broad oval face, black moustache, receding hairline, thin rectangular clear eyeglasses; taupe-brown flowing kaftan with cream embroidery, patterned cream-and-brown northern cap, black shoes |
+| Babatunde Fashola | `babatunde-fashola.png` | Nigerian man with medium dark brown skin, slim tall build, long narrow face, short grey-black hair, clean shaven, rectangular clear eyeglasses; navy blue traditional tunic and trousers with subtle pale blue embroidery, navy Yoruba fila cap, black shoes |
+| Nyesom Wike | `nyesom-wike.png` | Nigerian man with dark brown skin, broad round stocky face, short black hair under a cream wide-brimmed hat, neat black moustache and small chin beard, no glasses; deep green Niger Delta traditional long tunic and trousers with gold buttons and a simple gold chain, black shoes |
+| Oby Ezekwesili | `oby-ezekwesili.png` | Nigerian woman with medium brown skin, rounded oval face, distinctive dark rectangular eyeglasses, short natural black hair visible beneath a small red patterned headwrap; bright red and cream ankara blouse and long skirt with geometric zigzag pattern, simple necklace, low-heeled shoes |
+| Godswill Akpabio | `godswill-akpabio.png` | Nigerian man with dark brown skin, broad round face, full cheeks, clean shaven, no glasses; white traditional long tunic and trousers with purple embroidery, round white cap with purple embroidered band, dark shoes |
 
-## 2. Character blocks
+## Name references
 
-### Chief Promise Plenty: *Professional Promiser* (starter)
-```
-Character: round-bodied man, warm brown skin (#8d5524), thick moustache, black sunglasses.
-Outfit: white-cream flowing agbada (#f4f1e8) with gold embroidery (#d4a017) around the neck and chest.
-Headwear: soft gold fila cap folded to one side. Prop: white horsetail fly-whisk (irukere) in his left hand.
-Personality: overconfident, always promising "24-hour light by 2099".
-```
+- [State House presidency](https://statehouse.gov.ng/presidency/)
+- [State House past presidents](https://statehouse.gov.ng/past-heads-of-state-and-presidents/)
+- [National Assembly: Godswill Akpabio](https://nass.gov.ng/mps/single/513)
 
-### Hon. Mama Dividends: *Minister of Owambe Affairs* (5K coins)
-```
-Character: stout woman, brown skin (#a0662d), bold magenta lipstick, coral bead necklace.
-Outfit: purple ankara gown (#8e2de2) with orange zig-zag pattern (#ff9f1c).
-Headwear: huge, dramatic orange gele head-tie with pleats. Prop: smartphone in her right hand.
-Personality: shares "dividends of democracy" in tiny nylon bags, obsessed with her gele.
-```
-
-### Senator Bag Hustle: *Chairman, Committee on Big Bags* (25K)
-```
-Character: tall man, dark brown skin (#6b3e18), goatee, sunglasses.
-Outfit: green agbada (#1e7f4f) with white vertical stripes.
-Headwear: red chieftaincy cap with gold dots and a black tassel.
-Prop: blue-and-red checkered "Ghana-Must-Go" bag in his right hand (in stage 6 paper slips fly out).
-Personality: insists the bag only holds "constituency documents".
-```
-
-### Alhaji Budget Padding: *Grand Commissioner of Arithmetic* (100K)
-```
-Character: round man, light-brown skin (#c68642), full neat beard, prayer-bead-style necklace.
-Outfit: royal blue kaftan (#1565c0) with pale-blue embroidery.
-Headwear: tall, rounded embroidered cap, pale blue with blue zig-zag stitching.
-Prop: grey calculator (in stage 6 it smokes). Personality: turns ₦1,000 into ₦1 billion on paper.
-```
-
-### Governor Light-Off: *His Excellency of Generators* (400K)
-```
-Character: stout man, brown skin (#7a4a1c), moustache, sunglasses.
-Outfit: orange agbada (#ef6c00) with black polka dots.
-Headwear: black bowler hat with an orange band. Prop: handheld microphone raised mid-speech.
-Personality: commissioned the same transformer seven times.
-```
-
-### Prince Medical Abroad: *Ambassador of Checkups* (1.5M)
-```
-Character: tall man, brown skin (#9a5b2e), short beard, sunglasses.
-Outfit: deep purple agbada (#4a148c) with gold embroidery (#ffd700).
-Headwear: gold beret with a small star emblem. Prop: green passport held up.
-Personality: runs everything by video call from a hospital "abroad".
-```
-
-### Template for new characters
-```
-Character: [build: round / tall / stout], [skin tone hex], [facial hair], [glasses?].
-Outfit: [colour hex] [agbada / kaftan / gown] with [stripes / dots / embroidery / zig-zag] in [trim hex].
-Headwear: [fila / gele / red chieftaincy cap / embroidered cap / bowler / beret] in [hex].
-Prop: [bag / mic / phone / passport / calculator / fly-whisk / beads].
-Personality: [one-line satirical joke about political behaviour].
-```
-Then add the same values as a `look` object through `POST /api/admin/characters`. The game draws the new character immediately.
-
-## 3. Extra assets to generate
-
-```
-App icon: square, rounded corners, Nigerian green-white-green background, close-up of a cartoon
-politician face with gold cap and sunglasses, a big tapping finger touching his cheek, comic
-"TAP!" burst. Same thick-outline style. No text other than "TAP!".
-```
-```
-WhatsApp share banner 1200×630: the six fictional politicians lined up on a rally stage, each
-at a different meltdown stage, confetti, gold coins, title "TAP THE POLITICIAN" in chunky yellow
-letters with dark outline.
-```
+Unlock costs and saved character IDs remain stable when names change. IDs are internal compatibility keys, not display names.

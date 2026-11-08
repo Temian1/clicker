@@ -1,0 +1,74 @@
+[
+  {
+    "slug": "bola-tinubu",
+    "name": "Bola Ahmed Tinubu",
+    "description": "Older Yoruba man, round face, dark brown skin, round clear eyeglasses, patterned burgundy folded fila cap with cream infinity-like embroidery, cream agbada with green embroidery",
+    "title": "The Agbada Entrance"
+  },
+  {
+    "slug": "oluremi-tinubu",
+    "name": "Oluremi Tinubu",
+    "description": "Nigerian woman with medium brown skin, rounded face, warm smile, neatly groomed brows, no glasses; elegant magenta ankara gown with gold zigzag trim, large sculptural gold gele headwrap, simple bead necklace, low-heeled shoes",
+    "title": "The Gele Spotlight"
+  },
+  {
+    "slug": "peter-obi",
+    "name": "Peter Obi",
+    "description": "Nigerian man with medium dark brown skin, closely cropped black hair with receding hairline, clean shaven, distinctive dark rectangular eyeglasses, slim oval face; simple black short-sleeved traditional tunic and trousers, small silver buttons, black shoes, no cap",
+    "title": "The Quiet Entrance"
+  },
+  {
+    "slug": "atiku-abubakar",
+    "name": "Atiku Abubakar",
+    "description": "Older Nigerian man with medium brown skin, broad rounded face, grey close-cropped beard and moustache, smiling eyes, no glasses; pale blue flowing agbada with navy embroidery, navy-and-cream embroidered northern cap, dark shoes",
+    "title": "The Flowing Agbada"
+  },
+  {
+    "slug": "goodluck-jonathan",
+    "name": "Goodluck Jonathan",
+    "description": "Nigerian man with warm dark brown skin, broad oval face, characteristic black brimmed fedora hat, small neat moustache, no glasses; dark charcoal Niger Delta traditional long tunic with gold buttons and gold chain, matching trousers, black shoes",
+    "title": "The Fedora Flourish"
+  },
+  {
+    "slug": "muhammadu-buhari",
+    "name": "Muhammadu Buhari",
+    "description": "Older Nigerian man with dark brown skin, lean elongated face, high cheekbones, thin grey moustache, clear narrow rectangular glasses; white flowing babban riga kaftan with pale grey embroidery, tall cream northern embroidered cap, brown shoes",
+    "title": "The Kaftan Cameo"
+  },
+  {
+    "slug": "olusegun-obasanjo",
+    "name": "Olusegun Obasanjo",
+    "description": "Older Nigerian man with deep brown skin, round broad face, mostly bald head with short grey side hair, broad nose, no facial hair, no glasses; rich blue Yoruba agbada with cream geometric embroidery, blue folded fila cap, brown shoes",
+    "title": "The Grand Entrance"
+  },
+  {
+    "slug": "kashim-shettima",
+    "name": "Kashim Shettima",
+    "description": "Nigerian man with medium brown skin, broad oval face, black moustache, receding hairline, thin rectangular clear eyeglasses; taupe-brown flowing kaftan with cream embroidery, patterned cream-and-brown northern cap, black shoes",
+    "title": "The Embroidered Ensemble"
+  },
+  {
+    "slug": "babatunde-fashola",
+    "name": "Babatunde Fashola",
+    "description": "Nigerian man with medium dark brown skin, slim tall build, long narrow face, short grey-black hair, clean shaven, rectangular clear eyeglasses; navy blue traditional tunic and trousers with subtle pale blue embroidery, navy Yoruba fila cap, black shoes",
+    "title": "The Navy Blue Cameo"
+  },
+  {
+    "slug": "nyesom-wike",
+    "name": "Nyesom Wike",
+    "description": "Nigerian man with dark brown skin, broad round stocky face, short black hair under a cream wide-brimmed hat, neat black moustache and small chin beard, no glasses; deep green Niger Delta traditional long tunic and trousers with gold buttons and a simple gold chain, black shoes",
+    "title": "The Big Hat Entrance"
+  },
+  {
+    "slug": "oby-ezekwesili",
+    "name": "Oby Ezekwesili",
+    "description": "Nigerian woman with medium brown skin, rounded oval face, distinctive dark rectangular eyeglasses, short natural black hair visible beneath a small red patterned headwrap; bright red and cream ankara blouse and long skirt with geometric zigzag pattern, simple necklace, low-heeled shoes",
+    "title": "The Ankara Spotlight"
+  },
+  {
+    "slug": "godswill-akpabio",
+    "name": "Godswill Akpabio",
+    "description": "Nigerian man with dark brown skin, broad round face, full cheeks, clean shaven, no glasses; white traditional long tunic and trousers with purple embroidery, round white cap with purple embroidered band, dark shoes",
+    "title": "The Purple Trim Finale"
+  }
+]

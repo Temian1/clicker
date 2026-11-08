@@ -1,8 +1,8 @@
 # Tap The Politician 🇳🇬
 
-A Nigerian political-satire clicker, rebuilt from the old Banana Clicker in **React 19 + Three.js**. Tap fictional politicians until the agbada rumples, the cap flies off and *wahala don land*. The game never ends: every meltdown re-elects the politician into a harder term, and admins can add new characters at any time.
+A Nigerian political-satire clicker, rebuilt from the old Banana Clicker in **React 19 + Three.js**. Tap cartoon portrayals of Nigerian political figures until the agbada rumples, the cap flies off and *wahala don land*. The game never ends: every meltdown re-elects the politician into a harder term, and admins can add new characters at any time.
 
-> Satire. Every character is fictional. The game has no real-world rankings or approval scores.
+> Satire. Names and likenesses depict public figures; dialogue, promises and reactions are invented for comedy. No endorsement. The game has no real-world rankings or approval scores.
 
 ```
 tap-the-politician/

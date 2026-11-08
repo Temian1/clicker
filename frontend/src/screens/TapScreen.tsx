@@ -22,6 +22,7 @@ let fid = 0
 
 export default function TapScreen() {
   const selected = useGame((s) => s.selected)
+  const level = useGame((s) => s.level)
   const cp = useGame((s) => s.chars[s.selected])
   const energy = useGame((s) => s.energy)
   const combo = useGame((s) => s.combo)
@@ -32,7 +33,7 @@ export default function TapScreen() {
   const settings = useGame((s) => s.settings)
   const streakLast = useGame((s) => s.streak.last)
   const tap = useGame((s) => s.tap)
-  const useBoost = useGame((s) => s.useBoost)
+  const activateBoost = useGame((s) => s.useBoost)
   const maxEnergy = useMaxEnergy()
   const toast = useUi((s) => s.toast)
   const open = useUi((s) => s.open)
@@ -44,7 +45,7 @@ export default function TapScreen() {
 
   const [floaters, setFloaters] = useState<Floater[]>([])
   const [hit, setHit] = useState(false)
-  const [meltdown, setMeltdown] = useState<{ reward: number; term: number } | null>(null)
+  const [meltdown, setMeltdown] = useState<NonNullable<ReturnType<typeof tap>>['meltdown']>(null)
   const [scope, animate] = useAnimate()
   const arenaRef = useRef<HTMLDivElement>(null)
   const hitTimer = useRef<number>(0)
@@ -115,6 +116,7 @@ export default function TapScreen() {
         <div className="min-w-0 flex-1">
           <div className="font-display truncate text-lg leading-tight">{def.name}</div>
           <div className="flex items-center gap-2 text-xs font-bold text-white/70">
+            <span className="rounded-md bg-[#7dffb8] px-1.5 py-0.5 text-[#042016]">LVL {level}</span>
             <span className="rounded-md bg-[#ffc93c] px-1.5 py-0.5 text-[#3b2400]">TERM {cp.term}</span>
             <span className="truncate">{def.title}</span>
           </div>
@@ -216,7 +218,12 @@ export default function TapScreen() {
             >
               <div className="font-display text-outline text-5xl text-[#ff4d4d]">WAHALA DON LAND!</div>
               <div className="font-display text-outline-sm mt-2 text-2xl text-[#ffc93c]">+{fmt(meltdown.reward)} coins</div>
-              <div className="font-display text-outline-sm mt-1 text-lg">Re-elected for Term {meltdown.term}! 🗳️</div>
+              <div className="font-display text-outline mt-3 text-3xl text-[#7dffb8]">LEVEL {meltdown.level}!</div>
+              <div className="font-display text-outline-sm mt-1 text-lg">
+                {meltdown.newUnlock ? '🔓 New politician: ' : 'Next up: '}
+                {meltdown.nextName}
+                {meltdown.term > 1 && ` · Term ${meltdown.term}`}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -238,7 +245,7 @@ export default function TapScreen() {
           label={`${BOOSTS.refill.perDay - daily.refillUsed}/${BOOSTS.refill.perDay}`}
           disabled={daily.refillUsed >= BOOSTS.refill.perDay}
           onClick={() => {
-            if (useBoost('refill')) {
+            if (activateBoost('refill')) {
               sfx.buy()
               toast({ kind: 'success', title: 'Full Tank!', body: 'Energy refilled. Tap away!', icon: 'fuel' })
             }
@@ -250,7 +257,7 @@ export default function TapScreen() {
           label={turboLeft > 0 ? `${Math.ceil(turboLeft / 1000)}s` : `${BOOSTS.turbo.perDay - daily.turboUsed}/${BOOSTS.turbo.perDay}`}
           disabled={daily.turboUsed >= BOOSTS.turbo.perDay || turboLeft > 0}
           onClick={() => {
-            if (useBoost('turbo')) {
+            if (activateBoost('turbo')) {
               sfx.buy()
               toast({ kind: 'success', title: 'Turbo Rally!', body: 'x5 coins for 20 seconds', icon: 'rocket' })
             }

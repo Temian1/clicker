@@ -189,7 +189,7 @@ function BossFight({ onExit }: { onExit: () => void }) {
     const pool = playableCharacters().filter((c) => c.id !== selected)
     return pool[Math.floor(Math.random() * pool.length)] ?? getCharacter(selected)
   })
-  const promises = [...(boss.promises ?? []), ...GENERIC_PROMISES]
+  const promises = boss.promises?.length ? boss.promises : GENERIC_PROMISES
   const [promiseIdx, setPromiseIdx] = useState(0)
 
   const left = useCountdown(time, phase === 'play', () => end(tapsRef.current >= target))

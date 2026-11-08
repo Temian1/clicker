@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { CHARACTERS, getCharacter, randomLine } from './characters'
+import { CHARACTERS, getCharacter, playableCharacters, randomLine } from './characters'
 import {
   BOOSTS,
   COMBO_WINDOW_MS,
@@ -67,7 +67,7 @@ export interface TapResult {
   combo: number
   mult: number
   stageUp: number | null
-  meltdown: { reward: number; term: number } | null
+  meltdown: { reward: number; term: number; level: number; nextId: string; nextName: string; newUnlock: boolean } | null
 }
 
 interface Persisted {
@@ -85,6 +85,8 @@ interface Persisted {
   streak: { last: string | null; count: number }
   turboUntil: number
   bossLevel: number
+  /** Global level: +1 per meltdown. Each level moves you to the next cast member. */
+  level: number
   settings: Settings
   lastSeen: number
   pendingSync: { coins: number; taps: number }
@@ -159,6 +161,7 @@ const initial = (): Persisted => ({
   streak: { last: null, count: 0 },
   turboUntil: 0,
   bossLevel: 1,
+  level: 1,
   settings: { sfx: true, music: true, haptics: true, voice: false },
   lastSeen: Date.now(),
   pendingSync: { coins: 0, taps: 0 },
@@ -246,13 +249,21 @@ export const useGame = create<GameState>()(
         let meltdown: TapResult['meltdown'] = null
         let stageUp: number | null = null
         let bonus = 0
+        let chars = s.chars
 
         if (wahala >= meltdownAt(term)) {
           bonus = meltdownReward(term, char.coinBonus)
-          meltdown = { reward: bonus, term: term + 1 }
           term += 1
           meltdowns += 1
           wahala = 0
+          // LEVEL UP → move on to the next politician in the cast (loops forever;
+          // each lap they come back one term harder).
+          const cast = playableCharacters()
+          const idx = cast.findIndex((c) => c.id === s.selected)
+          const next = cast[(idx + 1) % cast.length]
+          const nextCp = s.chars[next.id] ?? { unlocked: false, wahala: 0, term: 1, meltdowns: 0, taps: 0 }
+          chars = { ...s.chars, [next.id]: { ...nextCp, unlocked: true } }
+          meltdown = { reward: bonus, term: nextCp.term, level: s.level + 1, nextId: next.id, nextName: next.name, newUnlock: !nextCp.unlocked }
         } else {
           const after = stageFor(wahala, term)
           if (after > before) stageUp = after
@@ -265,7 +276,8 @@ export const useGame = create<GameState>()(
           totalTaps: s.totalTaps + 1,
           combo,
           lastTapAt: now,
-          chars: { ...s.chars, [s.selected]: { ...cp, wahala, term, meltdowns, taps: cp.taps + 1 } },
+          chars: { ...chars, [s.selected]: { ...cp, wahala, term, meltdowns, taps: cp.taps + 1 } },
+          ...(meltdown ? { selected: meltdown.nextId, level: meltdown.level, combo: 0 } : {}),
           best: {
             ...s.best,
             combo: Math.max(s.best.combo, combo),
@@ -283,7 +295,7 @@ export const useGame = create<GameState>()(
 
         if (meltdown) {
           get().burst('meltdown')
-          get().say(randomLine(char, 5))
+          get().say(randomLine(getCharacter(meltdown.nextId), 0))
         } else if (stageUp !== null) {
           get().burst('stage')
           get().say(randomLine(char, stageUp))

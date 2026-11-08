@@ -83,7 +83,7 @@ function MenuSheet() {
           <Icon name="chevron" size={18} />
         </motion.button>
       ))}
-      <p className="mt-2 text-center text-[11px] font-semibold text-white/40">Tap The Politician v1.0 · Satire. All characters are fictional.</p>
+      <p className="mt-2 text-center text-[11px] font-semibold text-white/40">Tap The Politician v1.0 · Cartoon satire. Dialogue is invented, not real quotes.</p>
     </div>
   )
 }
@@ -352,12 +352,21 @@ function ShareSheet() {
     title('TAP THE POLITICIAN', 130, 96, '#ffc93c')
     title(STAGES[stage].name.toUpperCase(), 220, 64, STAGES[stage].color)
 
-    const svg = svgRef.current!
-    const xml = new XMLSerializer().serializeToString(svg)
-    const img = new Image()
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml)
-    await img.decode()
-    g.drawImage(img, W / 2 - 380, 250, 760, 760 * (380 / 300))
+    // draw the current pose straight from the sprite sheet (3×2 atlas)
+    if (def.look.spriteSheet) {
+      const img = new Image()
+      img.src = def.look.spriteSheet
+      await img.decode()
+      const cw = img.naturalWidth / 3
+      const ch = img.naturalHeight / 2
+      const size = 780
+      g.save()
+      g.beginPath()
+      g.arc(W / 2, 250 + size / 2, size / 2, 0, Math.PI * 2)
+      g.clip()
+      g.drawImage(img, (stage % 3) * cw, Math.floor(stage / 3) * ch, cw, ch, W / 2 - size / 2, 250, size, size)
+      g.restore()
+    }
 
     title(def.name, 1110, 64, '#ffffff')
     title(`TERM ${cp.term}  •  ${fmt(s.totalEarned)} COINS  •  COMBO ${s.best.combo}`, 1190, 46, '#ffc93c')
@@ -417,7 +426,7 @@ function ShareSheet() {
 }
 
 const FAQ = [
-  ['Are these real politicians?', 'No. Every character is a fictional caricature made for comedy. No real-world rankings or approval scores.'],
+  ['Are these real politicians?', 'The names and cartoon likenesses depict Nigerian public figures. Dialogue, promises and reactions are invented for comedy, not real quotes or claims. No endorsement, real-world rankings or approval scores.'],
   ['Does the game end?', 'Never. Each meltdown re-elects the politician into a new, harder term, and new characters join regularly.'],
   ['Why can I not tap?', 'Your energy (generator) is empty. Wait for it to refill, upgrade Solar Panel, or use a Full Tank boost.'],
   ['Is my progress saved?', 'Yes, on this device. Online accounts and cross-device sync are coming with the Laravel backend.'],

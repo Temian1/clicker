@@ -148,10 +148,9 @@ export function Toasts() {
 export function Hud() {
   const coins = useGame((s) => s.coins)
   const profile = useGame((s) => s.profile)
-  const totalEarned = useGame((s) => s.totalEarned)
   const open = useUi((s) => s.open)
   const unread = useUnreadAlerts()
-  const level = Math.max(1, Math.floor(Math.log10(totalEarned + 10) * 3 - 2))
+  const level = useGame((s) => s.level)
 
   return (
     <header className="relative z-20 flex items-center gap-2 px-3 pt-[max(env(safe-area-inset-top),10px)] pb-2">

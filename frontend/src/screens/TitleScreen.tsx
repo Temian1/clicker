@@ -19,7 +19,7 @@ export default function TitleScreen({ onPlay }: { onPlay: () => void }) {
     const t = window.setInterval(() => {
       setStage((s) => {
         if (s >= 5) {
-          setCi((c) => (c + 1) % 6)
+          setCi((c) => (c + 1) % CHARACTERS.filter((candidate) => !candidate.comingSoon).length)
           return 0
         }
         return s + 1
@@ -86,7 +86,7 @@ export default function TitleScreen({ onPlay }: { onPlay: () => void }) {
             <Icon name="tap" size={34} /> PLAY
           </span>
         </GameButton>
-        <p className="mt-3 text-center text-[11px] font-semibold text-white/45">Political satire. All characters are fictional. No real-world rankings.</p>
+        <p className="mt-3 text-center text-[11px] font-semibold text-white/45">Cartoon political satire. Invented dialogue. No endorsement or real-world rankings.</p>
       </motion.div>
     </div>
   )

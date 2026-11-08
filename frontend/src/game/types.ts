@@ -4,9 +4,8 @@ export type FacialHair = 'none' | 'moustache' | 'beard' | 'goatee'
 export type Build = 'round' | 'tall' | 'stout'
 
 /**
- * Fully data-driven character definition. The Politician SVG component renders
- * every layer (robe, cap, eyes, mouth, props) from this config, so new characters
- * can be added from the Laravel admin without shipping new art.
+ * Data-driven character definition. The Politician component displays a
+ * six-pose sprite sheet when supplied, with layered SVG as its fallback.
  */
 export interface CharacterDef {
   id: string
@@ -29,6 +28,8 @@ export interface CharacterDef {
     build: Build
     accessories: Accessory[]
     lipstick?: string
+    /** Transparent 3-column, 2-row atlas, ordered by reaction stage. */
+    spriteSheet?: string
   }
   /** Optional voice lines per stage (0-5); merged with the generic pool */
   lines?: Partial<Record<number, string[]>>

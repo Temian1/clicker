@@ -1,3 +1,11 @@
+# Current roster direction
+
+The user has explicitly replaced the original fictional-only direction below: the game now uses real Nigerian political figures' names and cartoon likenesses. Keep all dialogue, promises and reactions clearly invented for the game. Preserve existing IDs for saved progress. Use transparent six-pose sprite sheets in `frontend/public/characters/`, referenced through `look.spriteSheet`, with the layered SVG renderer as fallback. See `CHARACTER_PROMPTS.md` for the active cast and art layout.
+
+---
+
+## Archived original brief
+
 # Codex brief: generate new characters for Tap The Politician
 
 You are adding new politicians to a Nigerian political-satire clicker game. Read this whole file before writing code.

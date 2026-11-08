@@ -25,7 +25,7 @@ export default function CharactersScreen() {
       <SectionTitle icon="people" right={<span className="chip px-3 py-1 text-xs font-black">{CHARACTERS.filter((c) => !c.comingSoon).length} politicians</span>}>
         The Cast
       </SectionTitle>
-      <p className="-mt-2 mb-3 text-xs font-semibold text-white/60">All characters are fictional caricatures. New aspirants join the race regularly.</p>
+      <p className="-mt-2 mb-3 text-xs font-semibold text-white/60">Cartoon satire of Nigerian public figures. All dialogue and reactions are invented for the game.</p>
 
       {/* stage preview strip */}
       <div className="panel mb-3 p-3">
